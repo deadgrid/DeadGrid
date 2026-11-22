@@ -21,9 +21,9 @@ contract DeadGridScoresTest is Test {
 
     function testSubmitAndTop() public {
         vm.prank(alice);
-        s.submitScore{value: 0.0001 ether}("ALICE", 100, 5);
+        s.submitScore("ALICE", 100, 5);
         vm.prank(bob);
-        s.submitScore{value: 0.0001 ether}("BOB", 250, 12);
+        s.submitScore("BOB", 250, 12);
         (DeadGridScores.Entry[10] memory board, uint256 count) = s.getTop(s.currentDay());
         assertEq(count, 2);
         assertEq(board[0].player, bob);
@@ -34,9 +34,9 @@ contract DeadGridScoresTest is Test {
 
     function testImproveOwnScore() public {
         vm.prank(alice);
-        s.submitScore{value: 0.0001 ether}("ALICE", 100, 1);
+        s.submitScore("ALICE", 100, 1);
         vm.prank(alice);
-        s.submitScore{value: 0.0001 ether}("ALICE", 300, 9);
+        s.submitScore("ALICE", 300, 9);
         (DeadGridScores.Entry[10] memory board, uint256 count) = s.getTop(s.currentDay());
         assertEq(count, 1);
         assertEq(board[0].score, 300);
@@ -45,33 +45,27 @@ contract DeadGridScoresTest is Test {
 
     function testLowerScoreReverts() public {
         vm.prank(alice);
-        s.submitScore{value: 0.0001 ether}("ALICE", 100, 1);
+        s.submitScore("ALICE", 100, 1);
         vm.prank(alice);
         vm.expectRevert("beat your best first");
-        s.submitScore{value: 0.0001 ether}("ALICE", 50, 1);
-    }
-
-    function testFeeRequired() public {
-        vm.prank(alice);
-        vm.expectRevert("fee 0.0001 BNB");
-        s.submitScore{value: 0.00001 ether}("ALICE", 100, 1);
+        s.submitScore("ALICE", 50, 1);
     }
 
     function testNameLength() public {
         vm.prank(alice);
         vm.expectRevert("name 1-16 chars");
-        s.submitScore{value: 0.0001 ether}("THISNAMEISTOOLONG123", 100, 1);
+        s.submitScore("THISNAMEISTOOLONG123", 100, 1);
     }
 
     function testNewDayResetsBoard() public {
         vm.prank(alice);
-        s.submitScore{value: 0.0001 ether}("ALICE", 100, 1);
+        s.submitScore("ALICE", 100, 1);
         vm.warp(block.timestamp + 1 days + 1);
         (DeadGridScores.Entry[10] memory board, uint256 count) = s.getTop(s.currentDay());
         assertEq(count, 0);
         assertEq(board[0].score, 0);
         vm.prank(bob);
-        s.submitScore{value: 0.0001 ether}("BOB", 10, 0);
+        s.submitScore("BOB", 10, 0);
         (board, count) = s.getTop(s.currentDay());
         assertEq(count, 1);
         assertEq(board[0].player, bob);
@@ -82,17 +76,18 @@ contract DeadGridScoresTest is Test {
             address p = address(uint160(0x1000 + i));
             vm.deal(p, 1 ether);
             vm.prank(p);
-            s.submitScore{value: 0.0001 ether}("P", (i + 1) * 10, 0);
+            s.submitScore("P", (i + 1) * 10, 0);
         }
         (, uint256 count) = s.getTop(s.currentDay());
         assertEq(count, 10);
     }
 
-    function testWithdrawFees() public {
+    function testSubmitIsFree() public {
         vm.prank(alice);
-        s.submitScore{value: 0.0001 ether}("ALICE", 100, 1);
-        uint256 before = address(this).balance;
-        s.withdrawFees();
-        assertEq(address(this).balance, before + 0.0001 ether);
+        s.submitScore("ALICE", 100, 1);
+        assertEq(address(s).balance, 0);
+        (DeadGridScores.Entry[10] memory board, uint256 count) = s.getTop(s.currentDay());
+        assertEq(count, 1);
+        assertEq(board[0].score, 100);
     }
 }
