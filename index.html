@@ -119,6 +119,15 @@
   #startOverlay .btn-action:hover { box-shadow:0 0 0 1px rgba(111,211,255,0.9), 0 12px 40px rgba(46,168,232,0.5); }
   #startOverlay a.btn-action { display:inline-block; text-decoration:none; }
   #startOverlay .btn-mint { background:transparent; color:var(--green); border:1px solid rgba(109,255,138,0.6); box-shadow:none; }
+  #leaderboardPanel { width:min(420px, 92%); margin:18px auto 4px; background:rgba(10,18,22,0.85); border:1px solid #1d2f38; border-radius:12px; padding:14px 16px; text-align:left; }
+  #leaderboardPanel h3 { font-family:Orbitron; font-size:13px; letter-spacing:2px; color:#6fd3ff; margin:0 0 8px; }
+  .lb-row { display:flex; justify-content:space-between; gap:12px; font-family:Rajdhani; font-size:15px; font-weight:600; padding:5px 0; border-bottom:1px solid rgba(127,211,255,0.08); }
+  .lb-row b { color:#6dff8a; }
+  #leaderboardForm { width:min(420px, 92%); margin:10px auto 0; }
+  #playerName { width:100%; box-sizing:border-box; background:#04070b; border:1px solid #1d2f38; color:#e8f4f8; border-radius:8px; padding:12px; font-family:Rajdhani; font-size:16px; font-weight:600; text-align:center; margin-bottom:8px; }
+  #saveStatus { min-height:18px; margin:6px 0 2px; }
+  .btn-action.ghost { background:transparent; border:1px solid #6fd3ff; color:#6fd3ff; box-shadow:none; }
+  #gameOverOverlay .btn-action { display:block; margin:8px auto; }
   #startOverlay .btn-mint:hover { background:rgba(109,255,138,0.1); box-shadow:0 0 24px rgba(109,255,138,0.25); }
   .controls-hint { margin-top:22px; font-size:14px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
   .controls-hint b { color:var(--text); }
@@ -196,6 +205,7 @@
     #startOverlay .overlay { overflow-y:auto; justify-content:flex-start; padding-top:28px; }
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 </head>
 <body>
 
@@ -221,6 +231,10 @@
     <div id="charGrid"></div>
     <div id="charPicked">VEX · SCOUT · SPD 5.2 · DMG 1 · FIRE 110ms · 3 LIVES</div>
     <button class="btn-action" onclick="startGame()">Enter the Grid</button>
+    <div id="leaderboardPanel">
+      <h3>LEADERBOARD — TODAY (24H)</h3>
+      <div id="leaderboardRows"><p class="muted">Loading…</p></div>
+    </div>
     <br>
     <a class="btn-action btn-mint" href="mint.html">Mint NFT</a>
     <div class="controls-hint">3 lives &nbsp;·&nbsp; Walker — Runner — Brute &nbsp;·&nbsp; Outer / Mid / Core</div>
@@ -233,6 +247,12 @@
     <div class="title-rule"></div>
     <p class="score-line" id="finalScore">Score: 0</p>
     <p class="score-line" id="finalHigh">Best: 0</p>
+    <div id="leaderboardForm">
+      <input id="playerName" maxlength="16" placeholder="Your name (1-16 chars)" autocomplete="off">
+      <button class="btn-action" id="saveScoreBtn" onclick="saveScore()">SAVE TO LEADERBOARD</button>
+      <p id="saveStatus" class="muted"></p>
+    </div>
+    <button class="btn-action ghost" onclick="postToX()">POST TO X</button>
     <button class="btn-action" onclick="startGame()">Restart</button>
 </div>
 
@@ -1468,6 +1488,91 @@
     cancelAnimationFrame(rafId);
     loop();
   };
+
+  // ---------- On-chain leaderboard (24h) + Post to X ----------
+  // Set by the deployer: paste the DeadGridScores contract address here
+  // after deploying via leaderboard-deploy.html. Until then the board
+  // shows "opens after deploy" and Save is disabled.
+  const LEADERBOARD_CONTRACT = '0x0000000000000000000000000000000000000000';
+  const SCORES_ABI = [
+    'function currentDay() view returns (uint256)',
+    'function getTop(uint256 day) view returns (tuple(address player, string name, uint256 score, uint256 bnbMicro)[10] board, uint256 count)',
+    'function submitScore(string name, uint256 score, uint256 bnbMicro) payable'
+  ];
+  const SUBMIT_FEE = '0.0001';
+  const BSC_RPC = 'https://bsc-dataseed.binance.org/';
+  const boardEnabled = LEADERBOARD_CONTRACT !== '0x0000000000000000000000000000000000000000';
+
+  function fmtBnb(micro){ return (Number(micro) / 1000000).toFixed(6); }
+
+  async function loadLeaderboard(){
+    const rowsEl = document.getElementById('leaderboardRows');
+    if (!rowsEl) return;
+    if (!boardEnabled || typeof ethers === 'undefined'){
+      rowsEl.innerHTML = '<p class="muted">Leaderboard opens after the contract is deployed.</p>';
+      return;
+    }
+    try{
+      const provider = new ethers.JsonRpcProvider(BSC_RPC);
+      const c = new ethers.Contract(LEADERBOARD_CONTRACT, SCORES_ABI, provider);
+      const day = await c.currentDay();
+      const [board, count] = await c.getTop(day);
+      if (Number(count) === 0){
+        rowsEl.innerHTML = '<p class="muted">No scores today yet — be the first.</p>';
+        return;
+      }
+      let html = '';
+      for (let i = 0; i < Number(count); i++){
+        const e = board[i];
+        html += '<div class="lb-row"><span>#' + (i+1) + ' ' + e.name + '</span><b>' + e.score + ' pts · ' + fmtBnb(e.bnbMicro) + ' BNB</b></div>';
+      }
+      rowsEl.innerHTML = html;
+    }catch(e){
+      rowsEl.innerHTML = '<p class="muted">Could not load the leaderboard right now.</p>';
+    }
+  }
+
+  window.saveScore = async function(){
+    const statusEl = document.getElementById('saveStatus');
+    const name = (document.getElementById('playerName').value || '').trim();
+    if (!name){ statusEl.textContent = 'Enter your name first.'; return; }
+    if (!boardEnabled){ statusEl.textContent = 'Leaderboard not deployed yet.'; return; }
+    if (typeof ethers === 'undefined' || !window.ethereum){ statusEl.textContent = 'Open this page in a wallet browser (e.g. MetaMask).'; return; }
+    try{
+      localStorage.setItem('dg_name', name);
+      statusEl.textContent = 'Connecting wallet…';
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send('eth_requestAccounts', []);
+      const net = await provider.getNetwork();
+      if (net.chainId !== 56n){ statusEl.textContent = 'Switch your wallet to BNB Chain mainnet.'; return; }
+      const signer = await provider.getSigner();
+      const c = new ethers.Contract(LEADERBOARD_CONTRACT, SCORES_ABI, signer);
+      statusEl.textContent = 'Sending… (fee ' + SUBMIT_FEE + ' BNB)';
+      const tx = await c.submitScore(name, score, Math.round(bnbEarned * 1000000), { value: ethers.parseEther(SUBMIT_FEE) });
+      statusEl.textContent = 'Waiting for confirmation…';
+      await tx.wait();
+      statusEl.textContent = 'Saved! You are on today\'s leaderboard.';
+      loadLeaderboard();
+    }catch(e){
+      statusEl.textContent = 'Could not save: ' + (e.reason || e.message || 'transaction failed');
+    }
+  };
+
+  window.postToX = function(){
+    const name = (document.getElementById('playerName').value || '').trim();
+    const who = name ? name + ' ' : '';
+    const text = who + 'scored ' + score + ' pts as ' + selectedChar.name + ' in DEAD GRID and collected ' + bnbEarned.toFixed(6) + ' BNB from zombies! Can you beat me?';
+    const url = 'https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent('https://deadgrid.github.io/DeadGrid/');
+    window.open(url, '_blank');
+  };
+
+  // remember the last name used
+  try {
+    const savedName = localStorage.getItem('dg_name');
+    if (savedName) document.getElementById('playerName').value = savedName;
+  } catch(e) {}
+  loadLeaderboard();
+  setInterval(loadLeaderboard, 60000);
 
   updateHUD();
 })();
