@@ -3,12 +3,11 @@ pragma solidity ^0.8.20;
 
 /// @title DeadGridScores — daily (24h) on-chain leaderboard for DEAD GRID.
 /// @notice One leaderboard per UTC day. Each wallet keeps its best score of
-///  the day; only the top 10 make the board. A small fee stops spam.
+///  the day; only the top 10 make the board. Submitting is FREE (gas only).
 ///  Scores are self-reported by the game client (same trust model as
 ///  other arcade score contracts): the board is a public record, not
 ///  a proof of play.
 contract DeadGridScores {
-    uint256 public constant SUBMIT_FEE = 0.0001 ether;
     uint256 public constant DAY = 1 days;
     uint256 public constant BOARD_SIZE = 10;
     uint256 public constant MAX_NAME = 16;
@@ -27,7 +26,6 @@ contract DeadGridScores {
     mapping(uint256 => mapping(address => uint256)) public bestScore;
 
     event ScoreSubmitted(uint256 indexed day, address indexed player, string name, uint256 score, uint256 bnbMicro);
-    event FeesWithdrawn(address indexed owner, uint256 amount);
 
     constructor() {
         owner = msg.sender;
@@ -41,8 +39,7 @@ contract DeadGridScores {
     /// @param name Display name, 1-16 characters.
     /// @param score Your game score (must beat your best today, if any).
     /// @param bnbMicro BNB coins collected, in micro-BNB.
-    function submitScore(string calldata name, uint256 score, uint256 bnbMicro) external payable {
-        require(msg.value >= SUBMIT_FEE, "fee 0.0001 BNB");
+    function submitScore(string calldata name, uint256 score, uint256 bnbMicro) external {
         require(bytes(name).length > 0 && bytes(name).length <= MAX_NAME, "name 1-16 chars");
         require(score > 0, "score 0");
         uint256 day = currentDay();
@@ -79,12 +76,4 @@ contract DeadGridScores {
         return (_top[day], topCount[day]);
     }
 
-    function withdrawFees() external {
-        require(msg.sender == owner, "owner only");
-        uint256 amount = address(this).balance;
-        require(amount > 0, "nothing to withdraw");
-        (bool ok, ) = owner.call{value: amount}("");
-        require(ok, "withdraw failed");
-        emit FeesWithdrawn(owner, amount);
-    }
 }
