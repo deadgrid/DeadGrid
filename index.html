@@ -132,7 +132,9 @@
   }
   .char-btn:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.5); }
   .char-btn.selected { border-color:var(--green); box-shadow:0 0 0 1px var(--green), 0 0 18px rgba(109,255,138,0.25); }
+  .char-btn img { width:100%; height:110px; object-fit:cover; object-position:top; border-radius:4px; display:block; margin-bottom:6px; }
   .char-btn .char-name { font-size:13px; letter-spacing:2px; display:block; }
+  #gameOverChar { width:130px; height:130px; object-fit:cover; object-position:top; border-radius:8px; border:2px solid var(--green); box-shadow:0 0 24px rgba(109,255,138,0.3); margin-bottom:12px; }
   .char-btn .char-title { font-family:'Rajdhani',sans-serif; font-weight:600; font-size:12px; letter-spacing:1px; color:var(--muted); display:block; }
   .char-btn .char-rarity { font-size:10px; letter-spacing:2px; display:block; margin-top:2px; }
   .rarity-common { color:#9dffa8; } .rarity-rare { color:#6fd3ff; }
@@ -190,6 +192,8 @@
     .overlay h1 { letter-spacing:3px; }
     .overlay p { font-size:17px; }
     .btn-action { padding:14px 28px; font-size:14px; }
+    .char-btn img { height:64px; }
+    #startOverlay .overlay { overflow-y:auto; justify-content:flex-start; padding-top:28px; }
   }
 </style>
 </head>
@@ -223,6 +227,7 @@
 </div>
 
 <div id="gameOverOverlay" class="overlay hidden">
+    <img id="gameOverChar" src="assets/char-vex.png" alt="Your character">
     <h1 class="gameover">GAME OVER</h1>
     <div class="title-rule"></div>
     <p class="score-line" id="finalScore">Score: 0</p>
@@ -297,16 +302,16 @@
   // ---------- Characters: 10 survivors, each also an NFT ----------
   // speed = movement, dmg = damage per bullet, fire = ms between shots, lives = starting lives
   const CHARACTERS = [
-    { name:'VEX',     title:'Scout',   rarity:'COMMON',    color:'#6fd3ff', speed:5.2, dmg:1, fire:110, lives:3 },
-    { name:'NOVA',    title:'Gunner',  rarity:'RARE',      color:'#ff8c1a', speed:4.0, dmg:2, fire:220, lives:3 },
-    { name:'BULWARK', title:'Tank',    rarity:'EPIC',      color:'#b8c4cc', speed:3.4, dmg:1, fire:140, lives:5 },
-    { name:'GHOST',   title:'Phantom', rarity:'RARE',      color:'#c44dff', speed:4.8, dmg:1, fire:120, lives:3 },
-    { name:'MEDIX',   title:'Medic',   rarity:'COMMON',    color:'#7dffb0', speed:4.2, dmg:1, fire:140, lives:4 },
-    { name:'BLAZE',   title:'Pyro',    rarity:'COMMON',    color:'#ff3b4e', speed:4.4, dmg:1, fire:100, lives:3 },
-    { name:'FROST',   title:'Cryo',    rarity:'RARE',      color:'#7ff0e0', speed:4.0, dmg:1, fire:160, lives:4 },
-    { name:'VOLT',    title:'Striker', rarity:'EPIC',      color:'#ffd23e', speed:5.0, dmg:2, fire:200, lives:2 },
-    { name:'ORACLE',  title:'Seer',    rarity:'EPIC',      color:'#ff7ad9', speed:4.2, dmg:1, fire:120, lives:3 },
-    { name:'REAPER',  title:'Hunter',  rarity:'LEGENDARY', color:'#ffffff', speed:4.6, dmg:2, fire:180, lives:3 },
+    { name:'VEX',     title:'Scout',   rarity:'COMMON',    color:'#6fd3ff', speed:5.2, dmg:1, fire:110, lives:3, img:'assets/char-vex.png' },
+    { name:'NOVA',    title:'Gunner',  rarity:'RARE',      color:'#ff8c1a', speed:4.0, dmg:2, fire:220, lives:3, img:'assets/char-nova.png' },
+    { name:'BULWARK', title:'Tank',    rarity:'EPIC',      color:'#b8c4cc', speed:3.4, dmg:1, fire:140, lives:5, img:'assets/char-bulwark.png' },
+    { name:'GHOST',   title:'Phantom', rarity:'RARE',      color:'#c44dff', speed:4.8, dmg:1, fire:120, lives:3, img:'assets/char-ghost.png' },
+    { name:'MEDIX',   title:'Medic',   rarity:'COMMON',    color:'#7dffb0', speed:4.2, dmg:1, fire:140, lives:4, img:'assets/char-medix.png' },
+    { name:'BLAZE',   title:'Pyro',    rarity:'COMMON',    color:'#ff3b4e', speed:4.4, dmg:1, fire:100, lives:3, img:'assets/char-blaze.png' },
+    { name:'FROST',   title:'Cryo',    rarity:'RARE',      color:'#7ff0e0', speed:4.0, dmg:1, fire:160, lives:4, img:'assets/char-frost.png' },
+    { name:'VOLT',    title:'Striker', rarity:'EPIC',      color:'#ffd23e', speed:5.0, dmg:2, fire:200, lives:2, img:'assets/char-volt.png' },
+    { name:'ORACLE',  title:'Seer',    rarity:'EPIC',      color:'#ff7ad9', speed:4.2, dmg:1, fire:120, lives:3, img:'assets/char-oracle.png' },
+    { name:'REAPER',  title:'Hunter',  rarity:'LEGENDARY', color:'#ffffff', speed:4.6, dmg:2, fire:180, lives:3, img:'assets/char-reaper.png' },
   ];
   let selectedChar = CHARACTERS[0];
   const charGrid = document.getElementById('charGrid');
@@ -317,7 +322,8 @@
     CHARACTERS.forEach((c, i) => {
       const b = document.createElement('button');
       b.className = 'char-btn' + (c === selectedChar ? ' selected' : '');
-      b.innerHTML = '<span class="char-name" style="color:' + c.color + '">● ' + c.name + '</span>' +
+      b.innerHTML = '<img src="' + c.img + '" alt="' + c.name + '">' +
+        '<span class="char-name" style="color:' + c.color + '">' + c.name + '</span>' +
         '<span class="char-title">' + c.title + '</span>' +
         '<span class="char-rarity rarity-' + c.rarity.toLowerCase() + '">' + c.rarity + '</span>';
       b.onclick = () => { selectedChar = c; charPicked.textContent = charStatsLine(c); renderCharGrid(); };
@@ -1170,6 +1176,7 @@
     saveHighScore();
     finalScoreEl.textContent = 'Score: ' + score;
     finalHighEl.textContent = 'Best: ' + highScore;
+    document.getElementById('gameOverChar').src = selectedChar.img;
     updateHUD();
     gameOverOverlay.classList.remove('hidden');
     cancelAnimationFrame(rafId);

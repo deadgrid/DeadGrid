@@ -84,6 +84,12 @@
   .btn-blue { border-color:#2196f3; color:#7fd3ff; box-shadow:0 0 18px rgba(80,180,255,0.4); }
   .btn-blue:hover { box-shadow:0 0 30px rgba(80,180,255,0.7); }
   .btn-row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+  .chars-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-top:6px; }
+  .chars-grid figure { margin:0; text-align:center; }
+  .chars-grid img { width:100%; aspect-ratio:1; object-fit:cover; object-position:top; border-radius:8px; border:1px solid rgba(127,211,255,0.3); display:block; }
+  .chars-grid figcaption { font-family:'Orbitron',monospace; font-size:12px; font-weight:700; letter-spacing:1px; margin-top:6px; color:#e8f1f2; }
+  .chars-grid figcaption span { display:block; font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:600; color:#8fa3ad; letter-spacing:0; }
+  @media (max-width:600px) { .chars-grid { grid-template-columns:repeat(2, 1fr); } }
   @media (max-width:600px) { h1 { font-size:36px; letter-spacing:5px; } p { font-size:16px; } }
 </style>
 </head>
@@ -118,17 +124,19 @@
 
     <div class="card">
       <h2>THE 10 CHARACTERS</h2>
-      <div class="row"><span><b style="color:#6fd3ff">VEX</b> — Scout</span><b>COMMON · SPD 5.2 · DMG 1 · 3 lives</b></div>
-      <div class="row"><span><b style="color:#ff8c1a">NOVA</b> — Gunner</span><b>RARE · SPD 4.0 · DMG 2 · 3 lives</b></div>
-      <div class="row"><span><b style="color:#b8c4cc">BULWARK</b> — Tank</span><b>EPIC · SPD 3.4 · DMG 1 · 5 lives</b></div>
-      <div class="row"><span><b style="color:#c44dff">GHOST</b> — Phantom</span><b>RARE · SPD 4.8 · DMG 1 · 3 lives</b></div>
-      <div class="row"><span><b style="color:#7dffb0">MEDIX</b> — Medic</span><b>COMMON · SPD 4.2 · DMG 1 · 4 lives</b></div>
-      <div class="row"><span><b style="color:#ff3b4e">BLAZE</b> — Pyro</span><b>COMMON · SPD 4.4 · DMG 1 · 3 lives</b></div>
-      <div class="row"><span><b style="color:#7ff0e0">FROST</b> — Cryo</span><b>RARE · SPD 4.0 · DMG 1 · 4 lives</b></div>
-      <div class="row"><span><b style="color:#ffd23e">VOLT</b> — Striker</span><b>EPIC · SPD 5.0 · DMG 2 · 2 lives</b></div>
-      <div class="row"><span><b style="color:#ff7ad9">ORACLE</b> — Seer</span><b>EPIC · SPD 4.2 · DMG 1 · 3 lives</b></div>
-      <div class="row"><span><b style="color:#ffffff">REAPER</b> — Hunter</span><b>LEGENDARY · SPD 4.6 · DMG 2 · 3 lives</b></div>
-      <p class="muted" style="margin-top:10px;">All 10 are playable in the game right now — pick one on the start screen. Each has real stats: speed, damage per bullet, fire rate and lives. The NFT is your survivor.</p>
+      <div class="chars-grid">
+        <figure><img src="assets/char-vex.png" alt="VEX"><figcaption style="color:#6fd3ff">VEX<span>Scout · COMMON · SPD 5.2 · DMG 1 · 3 lives</span></figcaption></figure>
+        <figure><img src="assets/char-nova.png" alt="NOVA"><figcaption style="color:#ff8c1a">NOVA<span>Gunner · RARE · SPD 4.0 · DMG 2 · 3 lives</span></figcaption></figure>
+        <figure><img src="assets/char-bulwark.png" alt="BULWARK"><figcaption style="color:#b8c4cc">BULWARK<span>Tank · EPIC · SPD 3.4 · DMG 1 · 5 lives</span></figcaption></figure>
+        <figure><img src="assets/char-ghost.png" alt="GHOST"><figcaption style="color:#c44dff">GHOST<span>Phantom · RARE · SPD 4.8 · DMG 1 · 3 lives</span></figcaption></figure>
+        <figure><img src="assets/char-medix.png" alt="MEDIX"><figcaption style="color:#7dffb0">MEDIX<span>Medic · COMMON · SPD 4.2 · DMG 1 · 4 lives</span></figcaption></figure>
+        <figure><img src="assets/char-blaze.png" alt="BLAZE"><figcaption style="color:#ff3b4e">BLAZE<span>Pyro · COMMON · SPD 4.4 · DMG 1 · 3 lives</span></figcaption></figure>
+        <figure><img src="assets/char-frost.png" alt="FROST"><figcaption style="color:#7ff0e0">FROST<span>Cryo · RARE · SPD 4.0 · DMG 1 · 4 lives</span></figcaption></figure>
+        <figure><img src="assets/char-volt.png" alt="VOLT"><figcaption style="color:#ffd23e">VOLT<span>Striker · EPIC · SPD 5.0 · DMG 2 · 2 lives</span></figcaption></figure>
+        <figure><img src="assets/char-oracle.png" alt="ORACLE"><figcaption style="color:#ff7ad9">ORACLE<span>Seer · EPIC · SPD 4.2 · DMG 1 · 3 lives</span></figcaption></figure>
+        <figure><img src="assets/char-reaper.png" alt="REAPER"><figcaption style="color:#ffffff">REAPER<span>Hunter · LEGENDARY · SPD 4.6 · DMG 2 · 3 lives</span></figcaption></figure>
+      </div>
+      <p class="muted" style="margin-top:14px;">All 10 are playable in the game right now — pick one on the start screen. Each has real stats: speed, damage per bullet, fire rate and lives. The NFT is your survivor.</p>
     </div>
 
     <div class="card">
