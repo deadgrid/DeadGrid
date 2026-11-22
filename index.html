@@ -331,6 +331,9 @@
     });
   }
   renderCharGrid();
+  // Preload the 10 character portraits so the arena sprite is the chosen character
+  const charImgs = {};
+  CHARACTERS.forEach(c => { const im = new Image(); im.src = c.img; charImgs[c.name] = im; });
 
   function initState(){
     player = {
@@ -716,78 +719,49 @@
     ctx.fill();
     ctx.restore();
 
+    // The player IS the chosen character: draw their portrait in a circle,
+    // upright so the face is always readable, with a ring in their colour
+    // and a barrel showing the facing direction.
+    const r = p.size * 1.05;
+    const bob = p.moving ? Math.sin(p.walkCycle) * 0.04 : 0;
+    const img = charImgs[selectedChar.name];
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.scale(1 + bob, 1 + bob);
+    ctx.shadowColor = p.color || '#3aa0ff';
+    ctx.shadowBlur = 22;
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI*2);
+    if (img && img.complete && img.naturalWidth > 0){
+      ctx.save();
+      ctx.clip();
+      // portrait is square-ish; cover the circle, favouring the top (face)
+      ctx.drawImage(img, -r, -r, r*2, r*2);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = p.color || '#3aa0ff';
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = p.color || '#3aa0ff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // facing direction: a short barrel in the character's colour
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(p.angle);
-
-    const s = p.size/26; // skala dasar
-    const walk = p.moving ? Math.sin(p.walkCycle) : 0;
-    const walk2 = p.moving ? Math.sin(p.walkCycle + Math.PI) : 0;
-
-    ctx.shadowColor = '#3aa0ff';
-    ctx.shadowBlur = 20;
-
-    // legs (alternating swing while walking), shaded top-to-bottom
-    const legGrad = ctx.createLinearGradient(0,-2*s,0,11*s);
-    legGrad.addColorStop(0,'#2c4570');
-    legGrad.addColorStop(1,'#0c1320');
-    ctx.fillStyle = legGrad;
-    ctx.fillRect(-6*s, -2*s + walk*5*s, 5*s, 13*s);
-    ctx.fillRect(1*s, -2*s + walk2*5*s, 5*s, 13*s);
-
-    // torso — radial highlight gives it a sculpted, volumetric read
-    const torsoGrad = ctx.createRadialGradient(-3*s,-3*s,1*s, 0,0,11*s);
-    torsoGrad.addColorStop(0, '#86ccff');
-    torsoGrad.addColorStop(0.55, '#1d4ed8');
-    torsoGrad.addColorStop(1, '#0a1c45');
-    ctx.fillStyle = torsoGrad;
+    ctx.fillStyle = p.color || '#3aa0ff';
+    ctx.shadowColor = p.color || '#3aa0ff';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(r*0.55, -2.5, r*0.9, 5);
     ctx.beginPath();
-    ctx.ellipse(0, 0, 10*s, 8*s, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(170,225,255,0.55)';
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
-
-    // arms gripping the weapon (in front of the body, facing direction = positive x axis)
-    const armGrad = ctx.createLinearGradient(4*s,-7*s,9*s,7*s);
-    armGrad.addColorStop(0,'#24344f');
-    armGrad.addColorStop(1,'#0a0f1a');
-    ctx.fillStyle = armGrad;
-    ctx.fillRect(4*s, -7*s, 5*s, 4*s);
-    ctx.fillRect(4*s, 3*s, 5*s, 4*s);
-
-    // rifle — metallic gradient with a thin specular highlight
-    const gunGrad = ctx.createLinearGradient(6*s,-2.5*s,6*s,2.5*s);
-    gunGrad.addColorStop(0,'#5b5f66');
-    gunGrad.addColorStop(0.5,'#23262b');
-    gunGrad.addColorStop(1,'#13151a');
-    ctx.fillStyle = gunGrad;
-    ctx.fillRect(6*s, -1.5*s, 22*s, 3*s);
-    ctx.fillRect(24*s, -2.5*s, 4*s, 5*s); // barrel tip
-    ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    ctx.fillRect(7*s, -1.35*s, 18*s, 0.55*s); // specular strip
-    ctx.fillStyle = '#3a3d42';
-    ctx.fillRect(10*s, 1.5*s, 3*s, 5*s); // magasen
-
-    // head — volumetric shading
-    const headGrad = ctx.createRadialGradient(-2*s,-2*s,1*s, 0,0,7.5*s);
-    headGrad.addColorStop(0, '#ffdcb3');
-    headGrad.addColorStop(1, '#c2875a');
-    ctx.fillStyle = headGrad;
-    ctx.beginPath();
-    ctx.arc(0, 0 - 0, 7*s, 0, Math.PI*2); // centered, slightly overlapping the body for top-down view
-    ctx.fill();
-    // survivor helmet/cap
-    const helmGrad = ctx.createLinearGradient(0,-7*s,0,3*s);
-    helmGrad.addColorStop(0, '#2f6bb0');
-    helmGrad.addColorStop(1, '#071226');
-    ctx.fillStyle = helmGrad;
-    ctx.beginPath();
-    ctx.arc(0, 0, 7.4*s, Math.PI*0.65, Math.PI*1.85);
-    ctx.lineTo(0,0);
+    ctx.moveTo(r*1.45, 0);
+    ctx.lineTo(r*1.15, -5);
+    ctx.lineTo(r*1.15, 5);
     ctx.closePath();
     ctx.fill();
-
     ctx.restore();
   }
 
