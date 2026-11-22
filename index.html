@@ -4,96 +4,124 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>DEAD GRID</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg:#04070b; --panel:rgba(8,14,18,0.72); --line:rgba(127,211,255,0.22);
+    --green:#6dff8a; --cyan:#6fd3ff; --red:#ff3b4e; --amber:#ffb02e;
+    --text:#e8f1f2; --muted:#8fa3ad;
+  }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
     width:100%; height:100%; overflow:hidden;
-    background:#05060a;
-    font-family:'Courier New', monospace;
+    background:var(--bg);
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;
+    color:var(--text);
   }
   #gameCanvas {
     display:block;
-    background: radial-gradient(ellipse at center, #14181f 0%, #05060a 70%);
+    background: radial-gradient(ellipse at center, #101a20 0%, #04070b 72%);
     touch-action:none;
   }
   #hud {
     position:fixed; top:0; left:0; width:100%;
-    display:flex; justify-content:space-between; align-items:flex-start;
-    padding:14px 20px;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:8px;
+    padding:14px 16px;
     pointer-events:none;
     z-index:10;
   }
   .hud-box {
-    background:rgba(10,12,16,0.6);
-    border:1px solid rgba(110,255,150,0.35);
-    border-radius:8px;
-    padding:8px 16px;
-    color:#9dffa8;
-    font-size:18px;
-    text-shadow:0 0 8px rgba(110,255,150,0.8);
-    box-shadow:0 0 12px rgba(110,255,150,0.15);
-    letter-spacing:1px;
+    font-family:'Orbitron',monospace; font-weight:700;
+    background:var(--panel);
+    border:1px solid var(--line); border-top:2px solid var(--cyan);
+    border-radius:4px;
+    padding:9px 14px;
+    color:var(--text);
+    font-size:14px;
+    letter-spacing:2px;
+    backdrop-filter: blur(6px);
+    box-shadow:0 4px 24px rgba(0,0,0,0.45);
+    white-space:nowrap;
   }
-  #lives { color:#ff6b6b; text-shadow:0 0 8px rgba(255,80,80,0.8); }
-  #highscore { color:#7fd3ff; text-shadow:0 0 8px rgba(80,180,255,0.8); }
+  #score { border-top-color:var(--green); color:var(--green); }
+  #zone { border-top-color:var(--cyan); color:var(--cyan); }
+  #lives { border-top-color:var(--red); color:#ff8fa0; }
+  #highscore { border-top-color:var(--amber); color:var(--amber); }
 
   .overlay {
     position:fixed; top:0; left:0; width:100%; height:100%;
-    background:rgba(0,0,0,0.82);
-    backdrop-filter: blur(2px);
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(111,211,255,0.14) 0%, rgba(0,0,0,0) 55%),
+      rgba(2,5,8,0.86);
+    backdrop-filter: blur(3px);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     z-index:20;
     text-align:center;
     padding:20px;
   }
+  .overlay::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 4px);
+  }
+  .eyebrow {
+    font-family:'Orbitron',monospace; font-size:12px; font-weight:700;
+    letter-spacing:5px; color:var(--cyan); text-transform:uppercase; margin-bottom:14px;
+  }
   .overlay h1 {
-    color:#ff3b3b;
-    font-size:56px;
-    letter-spacing:8px;
-    text-shadow:0 0 20px rgba(255,40,40,0.9), 0 0 40px rgba(255,40,40,0.5);
-    margin-bottom:10px;
-    animation:flicker 1.6s infinite;
+    font-family:'Orbitron',monospace; font-weight:900;
+    font-size:clamp(44px, 10vw, 84px); line-height:0.95; letter-spacing:6px;
+    background:linear-gradient(180deg, #ffffff 15%, var(--cyan) 55%, var(--green) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 22px rgba(111,211,255,0.45));
+    margin-bottom:8px;
+    animation:flicker 2.4s infinite;
   }
   @keyframes flicker {
     0%,100% { opacity:1; }
-    45% { opacity:0.85; }
-    50% { opacity:0.6; }
-    55% { opacity:0.9; }
+    92% { opacity:1; }
+    93% { opacity:0.55; }
+    94% { opacity:1; }
+    96% { opacity:0.75; }
+    97% { opacity:1; }
   }
+  .overlay h1.gameover {
+    background:linear-gradient(180deg, #ffffff 10%, #ff8fa0 50%, var(--red) 100%);
+    -webkit-background-clip:text; background-clip:text;
+    filter:drop-shadow(0 0 22px rgba(255,59,78,0.5));
+  }
+  .title-rule { width:120px; height:3px; background:linear-gradient(90deg, transparent, var(--green), transparent); margin:10px 0 18px; }
   .overlay .subtitle {
-    color:#6b7785;
+    font-family:'Orbitron',monospace; font-weight:700;
+    color:var(--muted);
     font-size:13px;
-    letter-spacing:3px;
-    margin-bottom:24px;
+    letter-spacing:6px;
+    margin-bottom:20px;
     text-transform:uppercase;
   }
-  .overlay p { color:#cfd8e3; font-size:18px; margin:6px 0; }
-  .overlay .score-line { color:#9dffa8; font-size:20px; margin:8px 0; }
+  .overlay p { font-size:19px; font-weight:600; letter-spacing:1px; color:#c7d6db; margin:5px 0; }
+  .overlay p b { color:var(--green); }
+  .overlay .score-line { font-family:'Orbitron',monospace; font-size:18px; letter-spacing:2px; color:var(--green); margin:8px 0; }
   .btn-action {
-    margin-top:20px;
-    padding:14px 36px;
-    font-size:18px;
-    font-family:'Courier New', monospace;
-    letter-spacing:2px;
-    background:linear-gradient(145deg, #1b2a1f, #0c1410);
-    color:#9dffa8;
-    border:2px solid #4caf50;
-    border-radius:10px;
+    margin-top:22px;
+    padding:15px 40px;
+    font-size:16px; font-family:'Orbitron',monospace; font-weight:800; letter-spacing:3px;
+    text-transform:uppercase;
+    background:linear-gradient(180deg, #8affa4, #2fd35c);
+    color:#04140a; border:none; border-radius:4px;
     cursor:pointer;
-    box-shadow:0 0 18px rgba(80,255,120,0.4);
-    transition:all 0.15s ease;
+    box-shadow:0 0 0 1px rgba(109,255,138,0.6), 0 8px 32px rgba(47,211,92,0.35);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
   }
-  .btn-action:hover {
-    background:linear-gradient(145deg,#27402d,#142016);
-    box-shadow:0 0 30px rgba(80,255,120,0.7);
-    transform:scale(1.05);
-  }
-  #startOverlay h1 { color:#7fd3ff; text-shadow:0 0 20px rgba(80,180,255,0.9); }
-  #startOverlay .btn-action { border-color:#2196f3; color:#7fd3ff; box-shadow:0 0 18px rgba(80,180,255,0.4); }
-  #startOverlay .btn-action:hover { box-shadow:0 0 30px rgba(80,180,255,0.7); }
+  .btn-action:hover { transform:translateY(-2px) scale(1.02); box-shadow:0 0 0 1px rgba(109,255,138,0.9), 0 12px 40px rgba(47,211,92,0.5); }
+  #startOverlay .btn-action { background:linear-gradient(180deg, #9be2ff, #2ea8e8); color:#03121e; box-shadow:0 0 0 1px rgba(111,211,255,0.6), 0 8px 32px rgba(46,168,232,0.35); }
+  #startOverlay .btn-action:hover { box-shadow:0 0 0 1px rgba(111,211,255,0.9), 0 12px 40px rgba(46,168,232,0.5); }
   #startOverlay a.btn-action { display:inline-block; text-decoration:none; }
-  #startOverlay .btn-mint { border-color:#4caf50; color:#9dffa8; box-shadow:0 0 18px rgba(80,255,120,0.4); }
-  #startOverlay .btn-mint:hover { box-shadow:0 0 30px rgba(80,255,120,0.7); }
+  #startOverlay .btn-mint { background:transparent; color:var(--green); border:1px solid rgba(109,255,138,0.6); box-shadow:none; }
+  #startOverlay .btn-mint:hover { background:rgba(109,255,138,0.1); box-shadow:0 0 24px rgba(109,255,138,0.25); }
+  .controls-hint { margin-top:22px; font-size:14px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
+  .controls-hint b { color:var(--text); }
 
   .hidden { display:none !important; }
 
@@ -111,35 +139,40 @@
   #joystickZone {
     width:130px; height:130px;
     border-radius:50%;
-    background:rgba(255,255,255,0.05);
-    border:1px solid rgba(120,200,255,0.3);
+    background:rgba(8,14,18,0.55);
+    border:1px solid rgba(127,211,255,0.45);
+    box-shadow:inset 0 0 24px rgba(111,211,255,0.12), 0 0 20px rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
     position:relative;
     pointer-events:auto;
   }
   #joystickKnob {
     width:56px; height:56px;
     border-radius:50%;
-    background:rgba(120,200,255,0.4);
-    border:1px solid rgba(150,220,255,0.7);
+    background:linear-gradient(180deg, rgba(155,226,255,0.85), rgba(46,168,232,0.55));
+    border:1px solid rgba(200,240,255,0.9);
     position:absolute;
     top:37px; left:37px;
-    box-shadow:0 0 12px rgba(120,200,255,0.6);
+    box-shadow:0 0 18px rgba(111,211,255,0.55);
   }
   #shootBtn {
-    width:90px; height:90px;
+    width:92px; height:92px;
     border-radius:50%;
-    background:rgba(255,80,80,0.18);
-    border:2px solid rgba(255,90,90,0.7);
-    color:#ff8888;
-    font-size:14px;
-    letter-spacing:1px;
+    font-family:'Orbitron',monospace; font-weight:800; font-size:13px; letter-spacing:2px;
+    background:rgba(255,59,78,0.16);
+    border:2px solid rgba(255,90,110,0.85);
+    color:#ffb3bc;
     pointer-events:auto;
-    box-shadow:0 0 16px rgba(255,80,80,0.4);
+    box-shadow:0 0 22px rgba(255,59,78,0.35);
+    backdrop-filter: blur(4px);
   }
   @media (max-width:900px), (pointer:coarse) {
     #mobileControls { display:flex; }
-    .hud-box { font-size:14px; padding:6px 12px; }
-    .overlay h1 { font-size:36px; letter-spacing:5px; }
+    .hud-box { font-size:11px; padding:7px 9px; letter-spacing:1px; }
+    #hud { padding:10px 10px; flex-wrap:wrap; }
+    .overlay h1 { letter-spacing:3px; }
+    .overlay p { font-size:17px; }
+    .btn-action { padding:14px 28px; font-size:14px; }
   }
 </style>
 </head>
@@ -156,21 +189,25 @@
 
 <div id="startOverlay">
   <div class="overlay">
+    <div class="eyebrow">Sector 07 &nbsp;//&nbsp; Survival Protocol</div>
     <h1>DEAD GRID</h1>
+    <div class="title-rule"></div>
     <div class="subtitle">Human vs Zombie Survival</div>
-    <p>WASD to move &nbsp;|&nbsp; SPACE to shoot</p>
+    <p><b>WASD</b> to move &nbsp;·&nbsp; <b>SPACE</b> to shoot</p>
     <p>On mobile: use the joystick &amp; fire button</p>
-    <button class="btn-action" onclick="startGame()">ENTER THE GRID</button>
+    <button class="btn-action" onclick="startGame()">Enter the Grid</button>
     <br>
-    <a class="btn-action btn-mint" href="mint.html">MINT NFT</a>
+    <a class="btn-action btn-mint" href="mint.html">Mint NFT</a>
+    <div class="controls-hint">3 lives &nbsp;·&nbsp; Walker — Runner — Brute &nbsp;·&nbsp; Outer / Mid / Core</div>
   </div>
 </div>
 
 <div id="gameOverOverlay" class="overlay hidden">
-    <h1>GAME OVER</h1>
+    <h1 class="gameover">GAME OVER</h1>
+    <div class="title-rule"></div>
     <p class="score-line" id="finalScore">Score: 0</p>
     <p class="score-line" id="finalHigh">Best: 0</p>
-    <button class="btn-action" onclick="startGame()">RESTART</button>
+    <button class="btn-action" onclick="startGame()">Restart</button>
 </div>
 
 <div id="mobileControls">
@@ -213,7 +250,9 @@
   }
 
   // ---------- Game state ----------
-  let player, bullets, zombies, particles, keys, score, lives, gameRunning, spawnTimer, spawnInterval, difficultyTimer, hitFlash;
+  let player = null, bullets = [], zombies = [], particles = [], keys = {},
+      score = 0, lives = 3, gameRunning = false, spawnTimer = 0,
+      spawnInterval = 90, difficultyTimer = 0, hitFlash = 0;
 
   const scoreEl = document.getElementById('score');
   const livesEl = document.getElementById('lives');
@@ -806,10 +845,16 @@
 
   function drawGrid(){
     const gap = 64;
+    const t = performance.now() / 1000;
+    const pulse = 0.5 + 0.5 * Math.sin(t * 1.8);
     ctx.save();
 
-    // base floor
-    ctx.fillStyle = '#0a0d10';
+    // base floor: deep radial gradient, darker at the edges
+    const floor = ctx.createRadialGradient(viewW/2, viewH/2, 10, viewW/2, viewH/2, Math.max(viewW, viewH) * 0.75);
+    floor.addColorStop(0, '#101c22');
+    floor.addColorStop(0.55, '#0a1216');
+    floor.addColorStop(1, '#04070b');
+    ctx.fillStyle = floor;
     ctx.fillRect(0,0,viewW,viewH);
 
     // checkerboard tiles for grounded, dimensional floor read
@@ -817,47 +862,73 @@
     for (let row=0; row<rows; row++){
       for (let col=0; col<cols; col++){
         const dark = (row+col) % 2 === 0;
-        ctx.fillStyle = dark ? 'rgba(16,21,19,0.6)' : 'rgba(21,28,25,0.42)';
+        ctx.fillStyle = dark ? 'rgba(18,28,32,0.55)' : 'rgba(24,36,40,0.38)';
         ctx.fillRect(col*gap, row*gap, gap, gap);
       }
     }
 
-    // fine grid lines on top of tiles
-    ctx.strokeStyle = 'rgba(90,140,100,0.07)';
+    // fine grid lines, with brighter major lines every 4 tiles
     ctx.lineWidth = 1;
-    for (let x=0;x<viewW;x+=gap){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,viewH); ctx.stroke(); }
-    for (let y=0;y<viewH;y+=gap){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(viewW,y); ctx.stroke(); }
+    for (let x=0;x<viewW;x+=gap){
+      const major = (Math.round(x/gap) % 4 === 0);
+      ctx.strokeStyle = major ? 'rgba(127,211,255,0.14)' : 'rgba(127,211,255,0.06)';
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,viewH); ctx.stroke();
+    }
+    for (let y=0;y<viewH;y+=gap){
+      const major = (Math.round(y/gap) % 4 === 0);
+      ctx.strokeStyle = major ? 'rgba(127,211,255,0.14)' : 'rgba(127,211,255,0.06)';
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(viewW,y); ctx.stroke();
+    }
 
     // Battle zones: OUTER (edge, green) / MID (blue) / CORE (centre, red).
     // Concentric rectangles around the arena centre, matching getZone().
     const cx = viewW/2, cy = viewH/2;
+    // CORE glow, gently pulsing
+    const coreGlow = ctx.createRadialGradient(cx, cy, 4, cx, cy, Math.min(viewW, viewH) * 0.22);
+    coreGlow.addColorStop(0, 'rgba(255,59,78,' + (0.16 + 0.10 * pulse) + ')');
+    coreGlow.addColorStop(1, 'rgba(255,59,78,0)');
+    ctx.fillStyle = coreGlow;
+    ctx.fillRect(cx - Math.min(viewW, viewH) * 0.22, cy - Math.min(viewW, viewH) * 0.22, Math.min(viewW, viewH) * 0.44, Math.min(viewW, viewH) * 0.44);
     const zones = [
       { f: 0.68, color: '127,211,255', label: 'MID GRID' },
-      { f: 0.36, color: '255,59,59', label: 'CORE' },
+      { f: 0.36, color: '255,59,78', label: 'CORE' },
     ];
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.font = 'bold 13px "Courier New", monospace';
+    ctx.font = '700 12px Orbitron, "Rajdhani", monospace';
+    const corner = (x, y, hw, hh, s) => {
+      ctx.beginPath();
+      ctx.moveTo(x - hw, y - hh + s); ctx.lineTo(x - hw, y - hh); ctx.lineTo(x - hw + s, y - hh);
+      ctx.moveTo(x + hw - s, y - hh); ctx.lineTo(x + hw, y - hh); ctx.lineTo(x + hw, y - hh + s);
+      ctx.moveTo(x + hw, y + hh - s); ctx.lineTo(x + hw, y + hh); ctx.lineTo(x + hw - s, y + hh);
+      ctx.moveTo(x - hw + s, y + hh); ctx.lineTo(x - hw, y + hh); ctx.lineTo(x - hw, y + hh - s);
+      ctx.stroke();
+    };
     for (const zn of zones){
       const hw = (viewW/2) * zn.f, hh = (viewH/2) * zn.f;
-      ctx.fillStyle = 'rgba(' + zn.color + ',0.05)';
+      ctx.fillStyle = 'rgba(' + zn.color + ',0.055)';
       ctx.fillRect(cx-hw, cy-hh, hw*2, hh*2);
-      ctx.strokeStyle = 'rgba(' + zn.color + ',0.55)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([10, 6]);
-      ctx.strokeRect(cx-hw, cy-hh, hw*2, hh*2);
-      ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(' + zn.color + ',0.75)';
+      ctx.strokeStyle = 'rgba(' + zn.color + ',0.6)';
+      ctx.lineWidth = 1.5;
+      corner(cx, cy, hw, hh, 22);
+      ctx.fillStyle = 'rgba(' + zn.color + ',0.9)';
       ctx.fillText(zn.label, cx, cy-hh+18);
     }
+    // centre reticle
+    ctx.strokeStyle = 'rgba(255,59,78,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - 12, cy); ctx.lineTo(cx + 12, cy);
+    ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy + 12);
+    ctx.stroke();
     // OUTER zone = the arena edge itself
-    ctx.strokeStyle = 'rgba(110,255,150,0.45)';
+    ctx.strokeStyle = 'rgba(109,255,138,' + (0.4 + 0.2 * pulse) + ')';
     ctx.lineWidth = 2;
-    ctx.setLineDash([10, 6]);
-    ctx.strokeRect(4, 4, viewW-8, viewH-8);
+    ctx.setLineDash([14, 8]);
+    ctx.strokeRect(5, 5, viewW-10, viewH-10);
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(110,255,150,0.75)';
-    ctx.fillText('OUTER GRID', cx, 22);
+    ctx.fillStyle = 'rgba(109,255,138,0.9)';
+    ctx.fillText('OUTER GRID', cx, 24);
     ctx.restore();
 
     // static cracks / stains for ground texture
