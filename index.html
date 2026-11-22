@@ -205,6 +205,7 @@
   <div class="hud-box" id="score">SCORE: 0</div>
   <div class="hud-box" id="zone">ZONE: OUTER</div>
   <div class="hud-box" id="highscore">BEST: 0</div>
+  <div class="hud-box" id="bnb">BNB: 0.000000</div>
   <div class="hud-box" id="lives">LIVES: ❤❤❤</div>
 </div>
 
@@ -263,6 +264,7 @@
 
   // ---------- Persistent high score ----------
   let highScore = 0;
+  let bnbEarned = parseFloat(localStorage.getItem('dg_bnb') || '0') || 0;
   try {
     const stored = window.localStorage && window.localStorage.getItem('deadgrid_highscore');
     if (stored) highScore = parseInt(stored, 10) || 0;
@@ -275,7 +277,7 @@
   }
 
   // ---------- Game state ----------
-  let player = null, bullets = [], enemyShots = [], zombies = [], particles = [], keys = {},
+  let player = null, bullets = [], enemyShots = [], coins = [], floaters = [], zombies = [], particles = [], keys = {},
       score = 0, lives = 3, gameRunning = false, spawnTimer = 0,
       spawnInterval = 65, difficultyTimer = 0, hitFlash = 0;
 
@@ -283,6 +285,7 @@
   const livesEl = document.getElementById('lives');
   const highscoreEl = document.getElementById('highscore');
   const zoneEl = document.getElementById('zone');
+  const bnbEl = document.getElementById('bnb');
 
   // Battle zones: concentric rectangles around the arena centre.
   // CORE = centre, MID = middle ring, OUTER = edge where zombies spawn.
@@ -342,6 +345,8 @@
     shootCooldown = selectedChar.fire;
     bullets = [];
     enemyShots = [];
+    coins = [];
+    floaters = [];
     zombies = [];
     particles = [];
     keys = {};
@@ -358,6 +363,7 @@
   function updateHUD(){
     scoreEl.textContent = 'SCORE: ' + score;
     highscoreEl.textContent = 'BEST: ' + highScore;
+    if (bnbEl) bnbEl.textContent = 'BNB: ' + bnbEarned.toFixed(6);
     livesEl.textContent = 'LIVES: ' + '❤'.repeat(Math.max(lives,0)) + '♡'.repeat(Math.max(3-lives,0));
     if (zoneEl && player) zoneEl.textContent = 'ZONE: ' + getZone(player.x, player.y);
   }
@@ -688,6 +694,31 @@
       }
     }
 
+    // BNB coins: bob, magnet to the player when close, collect on touch
+    for (let i=coins.length-1;i>=0;i--){
+      const c = coins[i];
+      c.life -= 1;
+      c.bob += 0.08;
+      if (c.life <= 0){ coins.splice(i,1); continue; }
+      const cdx = player.x - c.x, cdy = player.y - c.y;
+      const clen = Math.hypot(cdx,cdy) || 1;
+      if (clen < 110){ c.x += (cdx/clen)*3; c.y += (cdy/clen)*3; }
+      if (clen < player.size*0.8){
+        coins.splice(i,1);
+        bnbEarned += c.value;
+        localStorage.setItem('dg_bnb', bnbEarned.toFixed(6));
+        floaters.push({ x: player.x, y: player.y - 30, text: '+0.000001 BNB', life: 60, maxLife: 60 });
+        updateHUD();
+      }
+    }
+    // floating pickup texts
+    for (let i=floaters.length-1;i>=0;i--){
+      const f = floaters[i];
+      f.y -= 0.8;
+      f.life -= 1;
+      if (f.life <= 0) floaters.splice(i,1);
+    }
+
     // enemy acid shots (Spitter)
     for (let i=enemyShots.length-1;i>=0;i--){
       const s = enemyShots[i];
@@ -725,6 +756,10 @@
               spawnExplosion(player.x, player.y, '#ff6b6b');
               updateHUD();
             }
+          }
+          // random BNB coin drop from the zombie
+          if (Math.random() < 0.3){
+            coins.push({ x: z.x, y: z.y, value: 0.000001, life: 600, bob: Math.random()*Math.PI*2 });
           }
           zombies.splice(j,1);
           if (lives <= 0){ endGame(); break; }
@@ -1330,6 +1365,34 @@
     }
     ctx.restore();
 
+    // BNB coins on the ground
+    for (const c of coins){
+      const bobY = Math.sin(c.bob) * 3;
+      const blink = c.life < 120 ? (Math.sin(c.life*0.3) > 0 ? 1 : 0.35) : 1;
+      ctx.save();
+      ctx.globalAlpha = blink;
+      ctx.shadowColor = '#f0b90b';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = '#f0b90b';
+      ctx.beginPath(); ctx.arc(c.x, c.y + bobY, 9, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#8a6d00';
+      ctx.font = '900 11px Orbitron, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('B', c.x, c.y + bobY + 0.5);
+      ctx.restore();
+    }
+    // floating pickup texts
+    for (const f of floaters){
+      ctx.save();
+      ctx.globalAlpha = Math.max(f.life / f.maxLife, 0);
+      ctx.fillStyle = '#f0b90b';
+      ctx.font = '700 13px Orbitron, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.restore();
+    }
+
     // enemy acid shots
     ctx.save();
     ctx.shadowColor = '#b8ff4d';
@@ -1377,7 +1440,7 @@
     gameRunning = false;
     saveHighScore();
     finalScoreEl.textContent = 'Score: ' + score;
-    finalHighEl.textContent = 'Best: ' + highScore;
+    finalHighEl.textContent = 'Best: ' + highScore + '  ·  BNB: ' + bnbEarned.toFixed(6);
     document.getElementById('gameOverChar').src = selectedChar.img;
     updateHUD();
     gameOverOverlay.classList.remove('hidden');
