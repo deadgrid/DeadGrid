@@ -275,9 +275,9 @@
   }
 
   // ---------- Game state ----------
-  let player = null, bullets = [], zombies = [], particles = [], keys = {},
+  let player = null, bullets = [], enemyShots = [], zombies = [], particles = [], keys = {},
       score = 0, lives = 3, gameRunning = false, spawnTimer = 0,
-      spawnInterval = 90, difficultyTimer = 0, hitFlash = 0;
+      spawnInterval = 65, difficultyTimer = 0, hitFlash = 0;
 
   const scoreEl = document.getElementById('score');
   const livesEl = document.getElementById('lives');
@@ -341,6 +341,7 @@
     };
     shootCooldown = selectedChar.fire;
     bullets = [];
+    enemyShots = [];
     zombies = [];
     particles = [];
     keys = {};
@@ -348,7 +349,7 @@
     lives = selectedChar.lives;
     gameRunning = true;
     spawnTimer = 0;
-    spawnInterval = 90;
+    spawnInterval = 65;
     difficultyTimer = 0;
     hitFlash = 0;
     updateHUD();
@@ -536,8 +537,28 @@
     }
   }
 
-  // Enemy characters: Walker (in game from the start),
-  // Runner (fast, appears from score 50), Brute (big, 3 HP, from score 150).
+  // Enemy characters — 10 zombie types, each a real drawn character.
+  // type: name, size, speed, color, hp, score, minScore to appear, weight
+  const ZOMBIE_TYPES = [
+    { type:'walker',     size:24, speed:1.0, color:'#3ecf5a', hp:1, scoreValue:10, min:0,   w:30 },
+    { type:'crawler',    size:16, speed:1.6, color:'#a8e10c', hp:1, scoreValue:15, min:30,  w:14 },
+    { type:'runner',     size:18, speed:2.2, color:'#ff8c1a', hp:1, scoreValue:20, min:50,  w:16 },
+    { type:'spitter',    size:22, speed:0.9, color:'#d4f542', hp:2, scoreValue:25, min:100, w:10 },
+    { type:'stalker',    size:20, speed:2.8, color:'#7a2bff', hp:1, scoreValue:25, min:120, w:10 },
+    { type:'brute',      size:36, speed:0.7, color:'#c44dff', hp:3, scoreValue:30, min:150, w:8 },
+    { type:'screamer',   size:22, speed:1.4, color:'#e8e8d0', hp:2, scoreValue:30, min:180, w:8 },
+    { type:'boomer',     size:30, speed:1.1, color:'#ff6b1a', hp:2, scoreValue:30, min:200, w:8 },
+    { type:'juggernaut', size:46, speed:0.5, color:'#8a9a7b', hp:8, scoreValue:60, min:250, w:5 },
+    { type:'wraith',     size:22, speed:2.0, color:'#b388ff', hp:2, scoreValue:40, min:300, w:6 },
+  ];
+  function pickZombieType(){
+    const pool = ZOMBIE_TYPES.filter(z => score >= z.min);
+    let total = 0;
+    for (const z of pool) total += z.w;
+    let roll = Math.random() * total;
+    for (const z of pool){ roll -= z.w; if (roll <= 0) return z; }
+    return pool[0];
+  }
   function spawnZombie(){
     const side = Math.floor(Math.random()*4);
     let x,y;
@@ -545,24 +566,26 @@
     else if (side===1){ x = viewW+30; y = Math.random()*viewH; }
     else if (side===2){ x = Math.random()*viewW; y = viewH+30; }
     else { x = -30; y = Math.random()*viewH; }
-    const diff = Math.min(score/200, 1.5);
-    const roll = Math.random();
-    let type = 'walker', size = 24, speed = 1.0 + Math.random()*0.8 + diff,
-        color = '#3ecf5a', hp = 1, scoreValue = 10;
-    if (score >= 150 && roll < 0.15){
-      type = 'brute'; size = 36; speed = 0.7 + Math.random()*0.3 + diff*0.5;
-      color = '#c44dff'; hp = 3; scoreValue = 30;
-    } else if (score >= 50 && roll < 0.35){
-      type = 'runner'; size = 18; speed = 2.2 + Math.random()*0.8 + diff;
-      color = '#ff8c1a'; hp = 1; scoreValue = 20;
-    }
+    const diff = Math.min(score/150, 2.0);
+    const base = pickZombieType();
+    const speed = (base.speed + Math.random()*0.8 + diff * (base.type === 'brute' || base.type === 'juggernaut' ? 0.5 : 1)) * 1.12;
     zombies.push({
-      x, y, size, speed, color, type, hp, maxHp: hp, scoreValue,
+      x, y, size: base.size, speed, color: base.color, type: base.type,
+      hp: base.hp, maxHp: base.hp, scoreValue: base.scoreValue,
       wobble: Math.random()*Math.PI*2,
       bodySeed: Math.random()*10,
       limbPhase: Math.random()*Math.PI*2,
-      angle: 0
+      angle: 0, spitTimer: 120 + Math.random()*120
     });
+    // Crawlers hunt in pairs
+    if (base.type === 'crawler'){
+      zombies.push({
+        x: x + 24, y: y + 16, size: base.size, speed, color: base.color, type: base.type,
+        hp: base.hp, maxHp: base.hp, scoreValue: base.scoreValue,
+        wobble: Math.random()*Math.PI*2, bodySeed: Math.random()*10,
+        limbPhase: Math.random()*Math.PI*2, angle: 0, spitTimer: 0
+      });
+    }
   }
 
   function spawnExplosion(x,y,color){
@@ -624,6 +647,7 @@
     }
 
     // zombies
+    const screamers = zombies.filter(s => s.type === 'screamer');
     for (let i=zombies.length-1;i>=0;i--){
       const z = zombies[i];
       const dx = player.x - z.x, dy = player.y - z.y;
@@ -631,8 +655,23 @@
       z.wobble += 0.15;
       z.limbPhase += 0.15;
       z.angle = Math.atan2(dy,dx);
-      z.x += (dx/len)*z.speed + Math.sin(z.wobble)*0.3;
-      z.y += (dy/len)*z.speed + Math.cos(z.wobble)*0.3;
+      // Screamer aura: zombies near a Screamer move faster
+      let effSpeed = z.speed;
+      if (z.type !== 'screamer' && screamers.some(s => s !== z && Math.hypot(s.x-z.x, s.y-z.y) < 220)) effSpeed += 0.6;
+      // Wraith phases: speed surges and fades
+      if (z.type === 'wraith') effSpeed *= 1 + 0.4*Math.sin(z.wobble*2);
+      // Stalker zigzags hard
+      const swayAmp = z.type === 'stalker' ? 0.9 : 0.3;
+      z.x += (dx/len)*effSpeed + Math.sin(z.wobble)*swayAmp;
+      z.y += (dy/len)*effSpeed + Math.cos(z.wobble)*swayAmp;
+      // Spitter: hurls acid at the player from range
+      if (z.type === 'spitter'){
+        z.spitTimer -= 1;
+        if (z.spitTimer <= 0 && len < 420){
+          enemyShots.push({ x: z.x, y: z.y, dx: (dx/len)*3.2, dy: (dy/len)*3.2, size: 6 });
+          z.spitTimer = 150 + Math.random()*60;
+        }
+      }
 
       // collision with player
       if (len < player.size*0.7+z.size*0.7){
@@ -649,6 +688,21 @@
       }
     }
 
+    // enemy acid shots (Spitter)
+    for (let i=enemyShots.length-1;i>=0;i--){
+      const s = enemyShots[i];
+      s.x += s.dx; s.y += s.dy;
+      if (s.x<-20||s.x>viewW+20||s.y<-20||s.y>viewH+20){ enemyShots.splice(i,1); continue; }
+      if (Math.hypot(s.x-player.x, s.y-player.y) < player.size*0.7 + s.size){
+        enemyShots.splice(i,1);
+        lives -= 1;
+        hitFlash = 1;
+        spawnExplosion(player.x, player.y, '#b8ff4d');
+        updateHUD();
+        if (lives <= 0){ endGame(); return; }
+      }
+    }
+
     // bullet-zombie collisions
     for (let i=bullets.length-1;i>=0;i--){
       const b = bullets[i];
@@ -662,7 +716,18 @@
           z.hp = (z.hp || 1) - (b.dmg || 1);
           if (z.hp > 0) break; // Brute takes 3 hits (2 with a 2-damage character)
           spawnZombieDeath(z.x, z.y);
+          // Boomer: explodes when killed — hurts the player if close
+          if (z.type === 'boomer'){
+            spawnExplosion(z.x, z.y, '#ff6b1a');
+            if (Math.hypot(player.x-z.x, player.y-z.y) < 110){
+              lives -= 1;
+              hitFlash = 1;
+              spawnExplosion(player.x, player.y, '#ff6b6b');
+              updateHUD();
+            }
+          }
           zombies.splice(j,1);
+          if (lives <= 0){ endGame(); break; }
           score += (z.scoreValue || 10);
           if (score > highScore){ highScore = score; }
           updateHUD();
@@ -696,9 +761,10 @@
     if (spawnTimer >= spawnInterval){
       spawnTimer = 0;
       spawnZombie();
+      if (score >= 200 && Math.random() < 0.3) spawnZombie();
     }
     difficultyTimer++;
-    if (difficultyTimer % 300 === 0 && spawnInterval > 25){
+    if (difficultyTimer % 240 === 0 && spawnInterval > 18){
       spawnInterval -= 5;
     }
   }
@@ -898,6 +964,10 @@
     const s = z.size/24;
     const sway = Math.sin(z.wobble) * 0.15;
     const armSwing = Math.sin(z.limbPhase) * 4*s;
+    // Wraith phases in and out of sight
+    if (z.type === 'wraith') ctx.globalAlpha = 0.55 + 0.3*Math.sin(z.wobble);
+    // Crawler stays low and wide
+    if (z.type === 'crawler') ctx.scale(1.2, 0.72);
 
     ctx.shadowColor = z.color || '#39ff6e';
     ctx.shadowBlur = 18;
@@ -916,26 +986,27 @@
 
     // arms reaching forward (facing direction = positive x axis), swaying
     const armGrad = ctx.createLinearGradient(-2*s,-8*s, 11*s, 8*s);
-    armGrad.addColorStop(0, '#3f8746');
-    armGrad.addColorStop(1, '#143018');
+    armGrad.addColorStop(0, shade(z.color, 0.85));
+    armGrad.addColorStop(1, shade(z.color, 0.3));
     ctx.strokeStyle = armGrad;
     ctx.lineWidth = 3.2*s;
     ctx.lineCap = 'round';
+    const armLen = z.type === 'stalker' ? 16*s : 11*s;
     ctx.beginPath();
     ctx.moveTo(-2*s, -6*s);
-    ctx.lineTo(11*s, -8*s + armSwing*0.6);
+    ctx.lineTo(armLen, -8*s + armSwing*0.6);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(-2*s, 6*s);
-    ctx.lineTo(11*s, 8*s - armSwing*0.6);
+    ctx.lineTo(armLen, 8*s - armSwing*0.6);
     ctx.stroke();
 
     // damaged body (uneven shape, mottled coloring), volumetric shading
     ctx.rotate(sway);
     const bodyGrad = ctx.createRadialGradient(-3*s,-4*s,1*s, 0,0,10*s);
-    bodyGrad.addColorStop(0, '#7fe28e');
-    bodyGrad.addColorStop(0.55, '#2f7d3f');
-    bodyGrad.addColorStop(1, '#0c2310');
+    bodyGrad.addColorStop(0, shade(z.color, 1.3));
+    bodyGrad.addColorStop(0.55, shade(z.color, 0.75));
+    bodyGrad.addColorStop(1, shade(z.color, 0.25));
     ctx.fillStyle = bodyGrad;
     ctx.beginPath();
     ctx.moveTo(-9*s, -7*s);
@@ -956,8 +1027,8 @@
 
     // head with glowing red eyes, volumetric shading
     const headGrad = ctx.createRadialGradient(0,-2*s,1*s, 2*s,0,7*s);
-    headGrad.addColorStop(0, '#66b772');
-    headGrad.addColorStop(1, '#1c401f');
+    headGrad.addColorStop(0, shade(z.color, 1.15));
+    headGrad.addColorStop(1, shade(z.color, 0.35));
     ctx.fillStyle = headGrad;
     ctx.beginPath();
     ctx.arc(2*s, 0, 6.5*s, 0, Math.PI*2);
@@ -969,6 +1040,38 @@
     ctx.arc(5*s, -2.2*s, 1.4*s, 0, Math.PI*2);
     ctx.arc(5*s, 2.2*s, 1.4*s, 0, Math.PI*2);
     ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // features that make each zombie read as its own character
+    if (z.type === 'spitter'){
+      // glowing acid sac on the chest
+      ctx.fillStyle = '#eaff47';
+      ctx.shadowColor = '#d4f542'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(-1*s, 0, 3.5*s, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+    } else if (z.type === 'boomer'){
+      // bloated belly
+      ctx.fillStyle = 'rgba(255,200,80,0.85)';
+      ctx.beginPath(); ctx.arc(-1*s, 0, 6*s, 0, Math.PI*2); ctx.fill();
+    } else if (z.type === 'screamer'){
+      // wide-open screaming mouth
+      ctx.fillStyle = '#0a0a0a';
+      ctx.beginPath(); ctx.arc(7*s, 0, 3*s, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(232,232,208,0.7)'; ctx.lineWidth = 1.5*s;
+      ctx.beginPath(); ctx.arc(7*s, 0, 5*s, 0, Math.PI*2); ctx.stroke();
+    } else if (z.type === 'juggernaut'){
+      // steel armour plates
+      ctx.fillStyle = 'rgba(200,210,216,0.8)';
+      ctx.fillRect(-6*s, -7*s, 8*s, 3*s);
+      ctx.fillRect(-6*s, 4*s, 8*s, 3*s);
+    } else if (z.type === 'brute'){
+      // shoulder spikes
+      ctx.fillStyle = '#e8e8e8';
+      ctx.beginPath();
+      ctx.moveTo(-4*s,-8*s); ctx.lineTo(-1*s,-13*s); ctx.lineTo(1*s,-8*s); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-4*s,8*s); ctx.lineTo(-1*s,13*s); ctx.lineTo(1*s,8*s); ctx.closePath(); ctx.fill();
+    }
 
     ctx.restore();
   }
@@ -1224,6 +1327,18 @@
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.size, 0, Math.PI*2);
       ctx.fill();
+    }
+    ctx.restore();
+
+    // enemy acid shots
+    ctx.save();
+    ctx.shadowColor = '#b8ff4d';
+    ctx.shadowBlur = 14;
+    for (const s of enemyShots){
+      ctx.fillStyle = '#b8ff4d';
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#5a8a00';
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.size*0.5, 0, Math.PI*2); ctx.fill();
     }
     ctx.restore();
 
