@@ -1497,7 +1497,7 @@
   const SCORES_ABI = [
     'function currentDay() view returns (uint256)',
     'function getTop(uint256 day) view returns (tuple(address player, string name, uint256 score, uint256 bnbMicro)[10] board, uint256 count)',
-    'function submitScore(string name, uint256 score, uint256 bnbMicro) payable'
+    'function submitScore(string name, uint256 score, uint256 bnbMicro)'
   ];
   const BSC_RPC = 'https://bsc-dataseed.binance.org/';
   const boardEnabled = LEADERBOARD_CONTRACT !== '0x0000000000000000000000000000000000000000';
