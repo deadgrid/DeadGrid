@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DEAD GRID — MINT</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; min-height:100%;
+    background:#05060a;
+    font-family:'Courier New', monospace;
+    color:#cfd8e3;
+  }
+  body {
+    background: radial-gradient(ellipse at center, #14181f 0%, #05060a 70%);
+  }
+  .top {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px;
+    border-bottom:1px solid rgba(110,255,150,0.2);
+  }
+  .top .logo { color:#7fd3ff; font-size:20px; letter-spacing:4px; text-decoration:none; text-shadow:0 0 12px rgba(80,180,255,0.8); }
+  .top nav a { color:#9dffa8; font-size:14px; letter-spacing:2px; text-decoration:none; margin-left:20px; }
+  .top nav a.active { color:#fff; border-bottom:1px solid #9dffa8; }
+  .wrap { max-width:720px; margin:0 auto; padding:36px 20px 60px; text-align:center; }
+  h1 {
+    color:#7fd3ff;
+    font-size:56px;
+    letter-spacing:8px;
+    text-shadow:0 0 20px rgba(80,180,255,0.9), 0 0 40px rgba(80,180,255,0.5);
+    margin-bottom:10px;
+    animation:flicker 1.6s infinite;
+  }
+  @keyframes flicker {
+    0%,100% { opacity:1; }
+    45% { opacity:0.85; }
+    50% { opacity:0.6; }
+    55% { opacity:0.9; }
+  }
+  .subtitle { color:#6b7785; font-size:13px; letter-spacing:3px; margin-bottom:24px; text-transform:uppercase; }
+  p { font-size:18px; margin:8px 0; line-height:1.5; }
+  .muted { color:#6b7785; font-size:15px; }
+  .card {
+    margin:28px 0; padding:20px;
+    background:rgba(10,12,16,0.6);
+    border:1px solid rgba(110,255,150,0.35);
+    border-radius:10px;
+    box-shadow:0 0 12px rgba(110,255,150,0.15);
+    text-align:left;
+  }
+  .card h2 { color:#9dffa8; font-size:18px; letter-spacing:2px; margin-bottom:12px; text-shadow:0 0 8px rgba(110,255,150,0.8); }
+  .card .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:16px; }
+  .card .row:last-child { border-bottom:none; }
+  .card .row b { color:#7fd3ff; font-weight:normal; }
+  .badge {
+    display:inline-block; padding:6px 14px; margin-bottom:16px;
+    border:1px solid rgba(255,107,107,0.6); border-radius:8px;
+    color:#ff6b6b; font-size:14px; letter-spacing:2px;
+    text-shadow:0 0 8px rgba(255,80,80,0.8);
+  }
+  .steps { text-align:left; margin:8px 0; }
+  .steps li { list-style:none; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:17px; line-height:1.5; }
+  .steps li:last-child { border-bottom:none; }
+  .steps li b { color:#9dffa8; }
+  .btn-action {
+    display:inline-block; margin-top:20px;
+    padding:14px 36px;
+    font-size:18px; font-family:'Courier New', monospace; letter-spacing:2px;
+    background:linear-gradient(145deg, #1b2a1f, #0c1410);
+    color:#9dffa8; border:2px solid #4caf50; border-radius:10px;
+    cursor:pointer; text-decoration:none;
+    box-shadow:0 0 18px rgba(80,255,120,0.4);
+    transition:all 0.15s ease;
+  }
+  .btn-action:hover { background:linear-gradient(145deg,#27402d,#142016); box-shadow:0 0 30px rgba(80,255,120,0.7); transform:scale(1.05); }
+  .btn-action:disabled, .btn-action.disabled {
+    opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none;
+  }
+  .btn-blue { border-color:#2196f3; color:#7fd3ff; box-shadow:0 0 18px rgba(80,180,255,0.4); }
+  .btn-blue:hover { box-shadow:0 0 30px rgba(80,180,255,0.7); }
+  .btn-row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+  @media (max-width:600px) { h1 { font-size:36px; letter-spacing:5px; } p { font-size:16px; } }
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="logo" href="index.html">DEAD GRID</a>
+    <nav>
+      <a href="index.html">PLAY</a>
+      <a href="mint.html" class="active">MINT</a>
+    </nav>
+  </div>
+
+  <div class="wrap">
+    <h1>MINT</h1>
+    <div class="subtitle">Human vs Zombie Survival</div>
+    <div class="badge">NOT DEPLOYED YET</div>
+    <p>Survive the grid. Own your survivor.</p>
+    <p class="muted">The survivor you play in the game — the one who moves with WASD, shoots with SPACE, and holds 3 lives against the zombies — is what this mint is about.</p>
+
+    <div class="card">
+      <h2>WHAT YOU MINT</h2>
+      <div class="row"><span>Character</span><b>Survivor</b></div>
+      <div class="row"><span>Game</span><b>DEAD GRID</b></div>
+      <div class="row"><span>Lives in game</span><b>3</b></div>
+      <div class="row"><span>Enemy in game</span><b>Zombie</b></div>
+      <div class="row"><span>Contract</span><b>—</b></div>
+      <div class="row"><span>Network</span><b>—</b></div>
+      <div class="row"><span>Price</span><b>—</b></div>
+      <div class="row"><span>Supply</span><b>—</b></div>
+    </div>
+
+    <div class="card">
+      <h2>ENEMIES</h2>
+      <div class="row"><span>Walker</span><b>In game now — slow, green</b></div>
+      <div class="row"><span>Runner</span><b>Planned — fast</b></div>
+      <div class="row"><span>Brute</span><b>Planned — big, strong</b></div>
+      <p class="muted" style="margin-top:10px;">Right now the grid only has Walkers. Runners and Brutes are the next enemies planned for the game.</p>
+    </div>
+
+    <div class="card">
+      <h2>BATTLE ZONES</h2>
+      <div class="row"><span>Outer Grid</span><b>Edge — where zombies spawn</b></div>
+      <div class="row"><span>Mid Grid</span><b>Arena — the main fight</b></div>
+      <div class="row"><span>Core</span><b>Center — most dangerous</b></div>
+      <p class="muted" style="margin-top:10px;">Right now the whole screen is one arena. These three zones are the battle map planned for the game.</p>
+    </div>
+
+    <div class="card">
+      <h2>HOW IT WORKS</h2>
+      <ol class="steps">
+        <li><b>1. PLAY</b> — Enter the grid, move with WASD, shoot with SPACE. Survive as long as you can and chase your best score.</li>
+        <li><b>2. SURVIVE</b> — Zombies come from every side. The longer you last, the faster they get.</li>
+        <li><b>3. MINT</b> — Mint opens when the contract is deployed. No contract yet, so no mint yet.</li>
+      </ol>
+    </div>
+
+    <button class="btn-action disabled" disabled>MINT — COMING SOON</button>
+    <p class="muted" style="margin-top:14px;">Contract not deployed yet. This page will go live when mint opens.</p>
+
+    <div class="btn-row">
+      <a class="btn-action btn-blue" href="index.html">PLAY THE GAME</a>
+    </div>
+  </div>
+</body>
+</html>
