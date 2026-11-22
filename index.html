@@ -149,6 +149,7 @@
 
 <div id="hud">
   <div class="hud-box" id="score">SCORE: 0</div>
+  <div class="hud-box" id="zone">ZONE: OUTER</div>
   <div class="hud-box" id="highscore">BEST: 0</div>
   <div class="hud-box" id="lives">LIVES: ❤❤❤</div>
 </div>
@@ -217,6 +218,18 @@
   const scoreEl = document.getElementById('score');
   const livesEl = document.getElementById('lives');
   const highscoreEl = document.getElementById('highscore');
+  const zoneEl = document.getElementById('zone');
+
+  // Battle zones: concentric rectangles around the arena centre.
+  // CORE = centre, MID = middle ring, OUTER = edge where zombies spawn.
+  function getZone(x, y){
+    const dx = Math.abs(x - viewW/2) / (viewW/2);
+    const dy = Math.abs(y - viewH/2) / (viewH/2);
+    const d = Math.max(dx, dy);
+    if (d <= 0.36) return 'CORE';
+    if (d <= 0.68) return 'MID';
+    return 'OUTER';
+  }
   const startOverlay = document.getElementById('startOverlay');
   const gameOverOverlay = document.getElementById('gameOverOverlay');
   const finalScoreEl = document.getElementById('finalScore');
@@ -246,6 +259,7 @@
     scoreEl.textContent = 'SCORE: ' + score;
     highscoreEl.textContent = 'BEST: ' + highScore;
     livesEl.textContent = 'LIVES: ' + '❤'.repeat(Math.max(lives,0)) + '♡'.repeat(Math.max(3-lives,0));
+    if (zoneEl && player) zoneEl.textContent = 'ZONE: ' + getZone(player.x, player.y);
   }
 
   // ---------- Input ----------
@@ -423,6 +437,8 @@
     }
   }
 
+  // Enemy characters: Walker (in game from the start),
+  // Runner (fast, appears from score 50), Brute (big, 3 HP, from score 150).
   function spawnZombie(){
     const side = Math.floor(Math.random()*4);
     let x,y;
@@ -430,9 +446,19 @@
     else if (side===1){ x = viewW+30; y = Math.random()*viewH; }
     else if (side===2){ x = Math.random()*viewW; y = viewH+30; }
     else { x = -30; y = Math.random()*viewH; }
-    const speed = 1.0 + Math.random()*0.8 + Math.min(score/200, 1.5);
+    const diff = Math.min(score/200, 1.5);
+    const roll = Math.random();
+    let type = 'walker', size = 24, speed = 1.0 + Math.random()*0.8 + diff,
+        color = '#3ecf5a', hp = 1, scoreValue = 10;
+    if (score >= 150 && roll < 0.15){
+      type = 'brute'; size = 36; speed = 0.7 + Math.random()*0.3 + diff*0.5;
+      color = '#c44dff'; hp = 3; scoreValue = 30;
+    } else if (score >= 50 && roll < 0.35){
+      type = 'runner'; size = 18; speed = 2.2 + Math.random()*0.8 + diff;
+      color = '#ff8c1a'; hp = 1; scoreValue = 20;
+    }
     zombies.push({
-      x, y, size:24, speed, color:'#3ecf5a',
+      x, y, size, speed, color, type, hp, maxHp: hp, scoreValue,
       wobble: Math.random()*Math.PI*2,
       bodySeed: Math.random()*10,
       limbPhase: Math.random()*Math.PI*2,
@@ -479,6 +505,7 @@
     }
     player.x = Math.max(player.size, Math.min(viewW-player.size, player.x));
     player.y = Math.max(player.size, Math.min(viewH-player.size, player.y));
+    if (zoneEl) zoneEl.textContent = 'ZONE: ' + getZone(player.x, player.y);
 
     // player always faces the nearest zombie; if none, face movement direction
     const nearest = getNearestZombie();
@@ -532,10 +559,12 @@
         if (d < z.size*0.7+b.size){
           const hitAngle = Math.atan2(b.dy, b.dx);
           spawnBlood(z.x, z.y, hitAngle);
+          bullets.splice(i,1);
+          z.hp = (z.hp || 1) - 1;
+          if (z.hp > 0) break; // Brute takes 3 hits
           spawnZombieDeath(z.x, z.y);
           zombies.splice(j,1);
-          bullets.splice(i,1);
-          score += 10;
+          score += (z.scoreValue || 10);
           if (score > highScore){ highScore = score; }
           updateHUD();
           break;
@@ -684,8 +713,20 @@
     const sway = Math.sin(z.wobble) * 0.15;
     const armSwing = Math.sin(z.limbPhase) * 4*s;
 
-    ctx.shadowColor = '#39ff6e';
+    ctx.shadowColor = z.color || '#39ff6e';
     ctx.shadowBlur = 18;
+
+    // HP bar for Brutes (3 HP)
+    if (z.maxHp > 1){
+      ctx.save();
+      ctx.rotate(-z.angle);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(-14*s, -20*s, 28*s, 4*s);
+      ctx.fillStyle = z.color;
+      ctx.fillRect(-14*s, -20*s, 28*s * (z.hp / z.maxHp), 4*s);
+      ctx.restore();
+    }
 
     // arms reaching forward (facing direction = positive x axis), swaying
     const armGrad = ctx.createLinearGradient(-2*s,-8*s, 11*s, 8*s);
@@ -786,6 +827,38 @@
     ctx.lineWidth = 1;
     for (let x=0;x<viewW;x+=gap){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,viewH); ctx.stroke(); }
     for (let y=0;y<viewH;y+=gap){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(viewW,y); ctx.stroke(); }
+
+    // Battle zones: OUTER (edge, green) / MID (blue) / CORE (centre, red).
+    // Concentric rectangles around the arena centre, matching getZone().
+    const cx = viewW/2, cy = viewH/2;
+    const zones = [
+      { f: 0.68, color: '127,211,255', label: 'MID GRID' },
+      { f: 0.36, color: '255,59,59', label: 'CORE' },
+    ];
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 13px "Courier New", monospace';
+    for (const zn of zones){
+      const hw = (viewW/2) * zn.f, hh = (viewH/2) * zn.f;
+      ctx.fillStyle = 'rgba(' + zn.color + ',0.05)';
+      ctx.fillRect(cx-hw, cy-hh, hw*2, hh*2);
+      ctx.strokeStyle = 'rgba(' + zn.color + ',0.55)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([10, 6]);
+      ctx.strokeRect(cx-hw, cy-hh, hw*2, hh*2);
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(' + zn.color + ',0.75)';
+      ctx.fillText(zn.label, cx, cy-hh+18);
+    }
+    // OUTER zone = the arena edge itself
+    ctx.strokeStyle = 'rgba(110,255,150,0.45)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 6]);
+    ctx.strokeRect(4, 4, viewW-8, viewH-8);
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(110,255,150,0.75)';
+    ctx.fillText('OUTER GRID', cx, 22);
+    ctx.restore();
 
     // static cracks / stains for ground texture
     ensureFloorDebris();
