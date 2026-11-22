@@ -1,12 +1,12 @@
 # DeadGridScores — daily on-chain leaderboard
 
 `DeadGridScores.sol` — top 10 per UTC day, one best score per wallet per day,
-submit fee 0.0001 BNB, owner withdraws the fees. BNB Chain.
+submitting is FREE (gas only). BNB Chain.
 
 ## Test
 ```
 forge install foundry-rs/forge-std
-forge test   # 8 tests
+forge test   # 7 tests
 ```
 
 ## Deploy
