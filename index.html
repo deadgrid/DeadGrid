@@ -122,6 +122,23 @@
   #startOverlay .btn-mint:hover { background:rgba(109,255,138,0.1); box-shadow:0 0 24px rgba(109,255,138,0.25); }
   .controls-hint { margin-top:22px; font-size:14px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
   .controls-hint b { color:var(--text); }
+  .char-label { font-family:'Orbitron',monospace; font-weight:700; font-size:12px; letter-spacing:4px; color:var(--muted); text-transform:uppercase; margin-top:6px; }
+  #charGrid { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:8px; margin-top:12px; max-width:640px; width:100%; }
+  .char-btn {
+    font-family:'Orbitron',monospace; font-weight:700; text-align:left;
+    background:var(--panel); border:1px solid var(--line); border-radius:4px;
+    padding:9px 10px; cursor:pointer; color:var(--text);
+    transition:border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .char-btn:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.5); }
+  .char-btn.selected { border-color:var(--green); box-shadow:0 0 0 1px var(--green), 0 0 18px rgba(109,255,138,0.25); }
+  .char-btn .char-name { font-size:13px; letter-spacing:2px; display:block; }
+  .char-btn .char-title { font-family:'Rajdhani',sans-serif; font-weight:600; font-size:12px; letter-spacing:1px; color:var(--muted); display:block; }
+  .char-btn .char-rarity { font-size:10px; letter-spacing:2px; display:block; margin-top:2px; }
+  .rarity-common { color:#9dffa8; } .rarity-rare { color:#6fd3ff; }
+  .rarity-epic { color:#c44dff; } .rarity-legendary { color:#ffd23e; }
+  #charPicked { margin-top:12px; font-family:'Orbitron',monospace; font-size:13px; letter-spacing:2px; color:var(--green); }
+  @media (max-width:700px) { #charGrid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
 
   .hidden { display:none !important; }
 
@@ -195,6 +212,9 @@
     <div class="subtitle">Human vs Zombie Survival</div>
     <p><b>WASD</b> to move &nbsp;·&nbsp; <b>SPACE</b> to shoot</p>
     <p>On mobile: use the joystick &amp; fire button</p>
+    <div class="char-label">Choose your character — 10 survivors</div>
+    <div id="charGrid"></div>
+    <div id="charPicked">VEX · SCOUT · SPD 5.2 · DMG 1 · FIRE 110ms · 3 LIVES</div>
     <button class="btn-action" onclick="startGame()">Enter the Grid</button>
     <br>
     <a class="btn-action btn-mint" href="mint.html">Mint NFT</a>
@@ -274,18 +294,52 @@
   const finalScoreEl = document.getElementById('finalScore');
   const finalHighEl = document.getElementById('finalHigh');
 
+  // ---------- Characters: 10 survivors, each also an NFT ----------
+  // speed = movement, dmg = damage per bullet, fire = ms between shots, lives = starting lives
+  const CHARACTERS = [
+    { name:'VEX',     title:'Scout',   rarity:'COMMON',    color:'#6fd3ff', speed:5.2, dmg:1, fire:110, lives:3 },
+    { name:'NOVA',    title:'Gunner',  rarity:'RARE',      color:'#ff8c1a', speed:4.0, dmg:2, fire:220, lives:3 },
+    { name:'BULWARK', title:'Tank',    rarity:'EPIC',      color:'#b8c4cc', speed:3.4, dmg:1, fire:140, lives:5 },
+    { name:'GHOST',   title:'Phantom', rarity:'RARE',      color:'#c44dff', speed:4.8, dmg:1, fire:120, lives:3 },
+    { name:'MEDIX',   title:'Medic',   rarity:'COMMON',    color:'#7dffb0', speed:4.2, dmg:1, fire:140, lives:4 },
+    { name:'BLAZE',   title:'Pyro',    rarity:'COMMON',    color:'#ff3b4e', speed:4.4, dmg:1, fire:100, lives:3 },
+    { name:'FROST',   title:'Cryo',    rarity:'RARE',      color:'#7ff0e0', speed:4.0, dmg:1, fire:160, lives:4 },
+    { name:'VOLT',    title:'Striker', rarity:'EPIC',      color:'#ffd23e', speed:5.0, dmg:2, fire:200, lives:2 },
+    { name:'ORACLE',  title:'Seer',    rarity:'EPIC',      color:'#ff7ad9', speed:4.2, dmg:1, fire:120, lives:3 },
+    { name:'REAPER',  title:'Hunter',  rarity:'LEGENDARY', color:'#ffffff', speed:4.6, dmg:2, fire:180, lives:3 },
+  ];
+  let selectedChar = CHARACTERS[0];
+  const charGrid = document.getElementById('charGrid');
+  const charPicked = document.getElementById('charPicked');
+  function charStatsLine(c){ return c.name + ' · ' + c.title.toUpperCase() + ' · SPD ' + c.speed.toFixed(1) + ' · DMG ' + c.dmg + ' · FIRE ' + c.fire + 'ms · ' + c.lives + ' LIVES'; }
+  function renderCharGrid(){
+    charGrid.innerHTML = '';
+    CHARACTERS.forEach((c, i) => {
+      const b = document.createElement('button');
+      b.className = 'char-btn' + (c === selectedChar ? ' selected' : '');
+      b.innerHTML = '<span class="char-name" style="color:' + c.color + '">● ' + c.name + '</span>' +
+        '<span class="char-title">' + c.title + '</span>' +
+        '<span class="char-rarity rarity-' + c.rarity.toLowerCase() + '">' + c.rarity + '</span>';
+      b.onclick = () => { selectedChar = c; charPicked.textContent = charStatsLine(c); renderCharGrid(); };
+      charGrid.appendChild(b);
+    });
+  }
+  renderCharGrid();
+
   function initState(){
     player = {
       x: viewW/2, y: viewH/2,
-      size: 26, speed: 4.2, color:'#3aa0ff',
+      size: 26, speed: selectedChar.speed, color: selectedChar.color,
+      dmg: selectedChar.dmg,
       angle: -Math.PI/2, moving:false, walkCycle:0
     };
+    shootCooldown = selectedChar.fire;
     bullets = [];
     zombies = [];
     particles = [];
     keys = {};
     score = 0;
-    lives = 3;
+    lives = selectedChar.lives;
     gameRunning = true;
     spawnTimer = 0;
     spawnInterval = 90;
@@ -349,7 +403,7 @@
   window.addEventListener('mouseup', joyEnd);
 
   let lastShotTime = 0;
-  const shootCooldown = 140; // ms, prevents super-fast click spamming
+  let shootCooldown = 140; // ms, set from the selected character's fire rate
 
   const shootBtn = document.getElementById('shootBtn');
   shootBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); shoot(); }, {passive:false});
@@ -385,7 +439,7 @@
     bullets.push({
       x: mx, y: my,
       dx: dx*10, dy: dy*10,
-      size:4
+      size:4, dmg: player.dmg || 1
     });
 
     spawnMuzzleFlash(mx, my, player.angle);
@@ -599,8 +653,8 @@
           const hitAngle = Math.atan2(b.dy, b.dx);
           spawnBlood(z.x, z.y, hitAngle);
           bullets.splice(i,1);
-          z.hp = (z.hp || 1) - 1;
-          if (z.hp > 0) break; // Brute takes 3 hits
+          z.hp = (z.hp || 1) - (b.dmg || 1);
+          if (z.hp > 0) break; // Brute takes 3 hits (2 with a 2-damage character)
           spawnZombieDeath(z.x, z.y);
           zombies.splice(j,1);
           score += (z.scoreValue || 10);
