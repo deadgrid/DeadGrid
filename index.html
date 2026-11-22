@@ -1499,7 +1499,6 @@
     'function getTop(uint256 day) view returns (tuple(address player, string name, uint256 score, uint256 bnbMicro)[10] board, uint256 count)',
     'function submitScore(string name, uint256 score, uint256 bnbMicro) payable'
   ];
-  const SUBMIT_FEE = '0.0001';
   const BSC_RPC = 'https://bsc-dataseed.binance.org/';
   const boardEnabled = LEADERBOARD_CONTRACT !== '0x0000000000000000000000000000000000000000';
 
@@ -1547,8 +1546,8 @@
       if (net.chainId !== 56n){ statusEl.textContent = 'Switch your wallet to BNB Chain mainnet.'; return; }
       const signer = await provider.getSigner();
       const c = new ethers.Contract(LEADERBOARD_CONTRACT, SCORES_ABI, signer);
-      statusEl.textContent = 'Sending… (fee ' + SUBMIT_FEE + ' BNB)';
-      const tx = await c.submitScore(name, score, Math.round(bnbEarned * 1000000), { value: ethers.parseEther(SUBMIT_FEE) });
+      statusEl.textContent = 'Sending… (free, gas only)';
+      const tx = await c.submitScore(name, score, Math.round(bnbEarned * 1000000));
       statusEl.textContent = 'Waiting for confirmation…';
       await tx.wait();
       statusEl.textContent = 'Saved! You are on today\'s leaderboard.';
