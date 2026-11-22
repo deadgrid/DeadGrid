@@ -1373,13 +1373,27 @@
       ctx.globalAlpha = blink;
       ctx.shadowColor = '#f0b90b';
       ctx.shadowBlur = 14;
-      ctx.fillStyle = '#f0b90b';
-      ctx.beginPath(); ctx.arc(c.x, c.y + bobY, 9, 0, Math.PI*2); ctx.fill();
+      // real BNB coin: gold disc + the BNB diamond emblem (no letters)
+      const cy = c.y + bobY;
+      const coinGrad = ctx.createRadialGradient(c.x - 3, cy - 3, 1, c.x, cy, 10);
+      coinGrad.addColorStop(0, '#ffe27a');
+      coinGrad.addColorStop(0.6, '#f0b90b');
+      coinGrad.addColorStop(1, '#b8860b');
+      ctx.fillStyle = coinGrad;
+      ctx.beginPath(); ctx.arc(c.x, cy, 9, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(138,109,0,0.9)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(c.x, cy, 7.2, 0, Math.PI*2); ctx.stroke();
+      // BNB emblem: two stacked diamonds
       ctx.fillStyle = '#8a6d00';
-      ctx.font = '900 11px Orbitron, monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('B', c.x, c.y + bobY + 0.5);
+      ctx.beginPath();
+      ctx.moveTo(c.x, cy - 5.2); ctx.lineTo(c.x + 3.6, cy - 1.2);
+      ctx.lineTo(c.x, cy + 1.2); ctx.lineTo(c.x - 3.6, cy - 1.2);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(c.x, cy - 1.2); ctx.lineTo(c.x + 3.6, cy + 1.2);
+      ctx.lineTo(c.x, cy + 5.2); ctx.lineTo(c.x - 3.6, cy + 1.2);
+      ctx.closePath(); ctx.fill();
       ctx.restore();
     }
     // floating pickup texts
