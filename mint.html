@@ -92,6 +92,7 @@
   @media (max-width:600px) { .chars-grid { grid-template-columns:repeat(2, 1fr); } }
   @media (max-width:600px) { h1 { font-size:36px; letter-spacing:5px; } p { font-size:16px; } }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 </head>
 <body>
   <div class="top">
@@ -111,15 +112,24 @@
 
     <div class="card">
       <h2>WHAT YOU MINT</h2>
-      <div class="row"><span>Character</span><b>Survivor</b></div>
-      <div class="row"><span>Game</span><b>DEAD GRID</b></div>
-      <div class="row"><span>Character</span><b>1 of 10 survivors</b></div>
-      <div class="row"><span>Lives in game</span><b>2–5, by character</b></div>
-      <div class="row"><span>Enemy in game</span><b>Zombie — Walker, Runner, Brute</b></div>
-      <div class="row"><span>Contract</span><b>—</b></div>
-      <div class="row"><span>Network</span><b>—</b></div>
-      <div class="row"><span>Price</span><b>—</b></div>
-      <div class="row"><span>Supply</span><b>—</b></div>
+      <div class="row"><span>Collection</span><b>DeadGrid (DGRID)</b></div>
+      <div class="row"><span>Types</span><b>30 — 10 Survivors · 10 Zombies · 10 Items</b></div>
+      <div class="row"><span>Supply</span><b>3,000 (100 per type)</b></div>
+      <div class="row"><span>Price</span><b>First mint FREE · extra 0.001 BNB</b></div>
+      <div class="row"><span>Gate</span><b>Binance Agent ID required</b></div>
+      <div class="row"><span>Network</span><b>BNB Chain</b></div>
+      <div class="row"><span>Contract</span><b id="nftAddr">—</b></div>
+      <div class="row"><span>Minted</span><b id="nftMinted">—</b></div>
+      <p class="muted" style="margin-top:10px;">Mint is random — the type is picked from the mint itself. One of each type exists only 100 times.</p>
+    </div>
+
+    <div class="card">
+      <h2>MINT NOW</h2>
+      <p>First mint per wallet is FREE (gas only). Further mints cost 0.001 BNB each. You need a Binance Agent ID in your wallet.</p>
+      <div class="btn-row">
+        <button class="btn-action" id="mintBtn" onclick="mintNFT()">MINT — FREE FIRST</button>
+      </div>
+      <p id="mintStatus" class="muted" style="margin-top:12px;">Contract not deployed yet — mint opens after deploy.</p>
     </div>
 
     <div class="card">
@@ -137,6 +147,40 @@
         <figure><img src="assets/char-reaper.png" alt="REAPER"><figcaption style="color:#ffffff">REAPER<span>Hunter · LEGENDARY · SPD 4.6 · DMG 2 · 3 lives</span></figcaption></figure>
       </div>
       <p class="muted" style="margin-top:14px;">All 10 are playable in the game right now — pick one on the start screen. Each has real stats: speed, damage per bullet, fire rate and lives. The NFT is your survivor.</p>
+    </div>
+
+    <div class="card">
+      <h2>THE 10 ZOMBIES</h2>
+      <div class="chars-grid">
+        <figure><img src="assets/zombies/walker.png" alt="Walker"><figcaption style="color:#3ecf5a">WALKER<span>1 HP · 10 pts</span></figcaption></figure>
+        <figure><img src="assets/zombies/crawler.png" alt="Crawler"><figcaption style="color:#a8e10c">CRAWLER<span>1 HP · 15 pts · pairs</span></figcaption></figure>
+        <figure><img src="assets/zombies/runner.png" alt="Runner"><figcaption style="color:#ff8c1a">RUNNER<span>1 HP · 20 pts</span></figcaption></figure>
+        <figure><img src="assets/zombies/spitter.png" alt="Spitter"><figcaption style="color:#d4f542">SPITTER<span>2 HP · 25 pts · acid</span></figcaption></figure>
+        <figure><img src="assets/zombies/stalker.png" alt="Stalker"><figcaption style="color:#7a2bff">STALKER<span>1 HP · 25 pts · zigzag</span></figcaption></figure>
+        <figure><img src="assets/zombies/brute.png" alt="Brute"><figcaption style="color:#c44dff">BRUTE<span>3 HP · 30 pts</span></figcaption></figure>
+        <figure><img src="assets/zombies/screamer.png" alt="Screamer"><figcaption style="color:#e8e8d0">SCREAMER<span>2 HP · 30 pts · scream</span></figcaption></figure>
+        <figure><img src="assets/zombies/boomer.png" alt="Boomer"><figcaption style="color:#ff6b1a">BOOMER<span>2 HP · 30 pts · explodes</span></figcaption></figure>
+        <figure><img src="assets/zombies/juggernaut.png" alt="Juggernaut"><figcaption style="color:#8a9a7b">JUGGERNAUT<span>8 HP · 60 pts</span></figcaption></figure>
+        <figure><img src="assets/zombies/wraith.png" alt="Wraith"><figcaption style="color:#b388ff">WRAITH<span>2 HP · 40 pts · phases</span></figcaption></figure>
+      </div>
+      <p class="muted" style="margin-top:14px;">The 10 zombie enemies, drawn as they appear in the game. Mint one and own the horde.</p>
+    </div>
+
+    <div class="card">
+      <h2>THE 10 ITEMS</h2>
+      <div class="chars-grid">
+        <figure><img src="assets/items/rifle.png" alt="Scout Rifle"><figcaption style="color:#6fd3ff">SCOUT RIFLE<span>VEX · COMMON</span></figcaption></figure>
+        <figure><img src="assets/items/heavygun.png" alt="Heavy Gun"><figcaption style="color:#ff8c1a">HEAVY GUN<span>NOVA · RARE</span></figcaption></figure>
+        <figure><img src="assets/items/shield.png" alt="Riot Shield"><figcaption style="color:#b8c4cc">RIOT SHIELD<span>BULWARK · EPIC</span></figcaption></figure>
+        <figure><img src="assets/items/flamethrower.png" alt="Flamethrower"><figcaption style="color:#ff3b4e">FLAMETHROWER<span>BLAZE · COMMON</span></figcaption></figure>
+        <figure><img src="assets/items/scythe.png" alt="Reaper Scythe"><figcaption style="color:#ffffff">REAPER SCYTHE<span>REAPER · LEGENDARY</span></figcaption></figure>
+        <figure><img src="assets/items/staff.png" alt="Oracle Staff"><figcaption style="color:#ff7ad9">ORACLE STAFF<span>ORACLE · EPIC</span></figcaption></figure>
+        <figure><img src="assets/items/medkit.png" alt="Medkit"><figcaption style="color:#7dffb0">MEDKIT<span>MEDIX · COMMON</span></figcaption></figure>
+        <figure><img src="assets/items/crystal.png" alt="Ice Crystal"><figcaption style="color:#7ff0e0">ICE CRYSTAL<span>FROST · RARE</span></figcaption></figure>
+        <figure><img src="assets/items/coil.png" alt="Lightning Coil"><figcaption style="color:#ffd23e">LIGHTNING COIL<span>VOLT · EPIC</span></figcaption></figure>
+        <figure><img src="assets/items/dagger.png" alt="Phantom Dagger"><figcaption style="color:#c44dff">PHANTOM DAGGER<span>GHOST · RARE</span></figcaption></figure>
+      </div>
+      <p class="muted" style="margin-top:14px;">The weapons of the survivors — each item belongs to its survivor.</p>
     </div>
 
     <div class="card">
@@ -177,16 +221,67 @@
       <ol class="steps">
         <li><b>1. PLAY</b> — Enter the grid, move with WASD, shoot with SPACE. Survive as long as you can and chase your best score.</li>
         <li><b>2. SURVIVE</b> — Zombies come from every side. The longer you last, the faster they get.</li>
-        <li><b>3. MINT</b> — Mint opens when the contract is deployed. No contract yet, so no mint yet.</li>
+        <li><b>3. MINT</b> — First mint FREE, extra mints 0.001 BNB. You need a Binance Agent ID. 30 types, 100 each, random.</li>
       </ol>
     </div>
 
-    <button class="btn-action disabled" disabled>MINT — COMING SOON</button>
-    <p class="muted" style="margin-top:14px;">Contract not deployed yet. This page will go live when mint opens.</p>
 
     <div class="btn-row">
       <a class="btn-action btn-blue" href="index.html">PLAY THE GAME</a>
     </div>
   </div>
+<script>
+  // Set by the deployer: paste the DeadGridNFT contract address here
+  // after deploying via nft-deploy.html.
+  const NFT_CONTRACT = '0x0000000000000000000000000000000000000000';
+  const NFT_ABI = [
+    'function mint() payable returns (uint256)',
+    'function totalMinted() view returns (uint256)',
+    'function mintOpen() view returns (bool)',
+    'function mintedByWallet(address) view returns (uint256)',
+    'function MINT_PRICE() view returns (uint256)'
+  ];
+  const nftEnabled = NFT_CONTRACT !== '0x0000000000000000000000000000000000000000';
+
+  async function refreshMinted(){
+    const el = document.getElementById('nftMinted');
+    const addrEl = document.getElementById('nftAddr');
+    if (!nftEnabled || typeof ethers === 'undefined'){ el.textContent = '—'; addrEl.textContent = '—'; return; }
+    addrEl.textContent = NFT_CONTRACT;
+    try{
+      const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
+      const c = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
+      el.textContent = (await c.totalMinted()) + ' / 3000';
+    }catch(e){ el.textContent = '—'; }
+  }
+
+  async function mintNFT(){
+    const statusEl = document.getElementById('mintStatus');
+    if (!nftEnabled){ statusEl.textContent = 'Contract not deployed yet — mint opens after deploy.'; return; }
+    if (typeof ethers === 'undefined' || !window.ethereum){ statusEl.textContent = 'Open this page in a wallet browser (e.g. MetaMask).'; return; }
+    try{
+      statusEl.textContent = 'Connecting wallet…';
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send('eth_requestAccounts', []);
+      const net = await provider.getNetwork();
+      if (net.chainId !== 56n){ statusEl.textContent = 'Switch your wallet to BNB Chain mainnet.'; return; }
+      const signer = await provider.getSigner();
+      const addr = await signer.getAddress();
+      const c = new ethers.Contract(NFT_CONTRACT, NFT_ABI, signer);
+      const already = await c.mintedByWallet(addr);
+      const price = already == 0n ? 0n : await c.MINT_PRICE();
+      statusEl.textContent = already == 0n ? 'Sending your FREE mint…' : 'Sending mint (0.001 BNB)…';
+      const tx = await c.mint({ value: price });
+      statusEl.textContent = 'Waiting for confirmation…';
+      await tx.wait();
+      statusEl.textContent = 'Minted! Check your wallet — your DeadGrid NFT is random: survivor, zombie or item.';
+      refreshMinted();
+    }catch(e){
+      statusEl.textContent = 'Mint failed: ' + (e.reason || e.message || 'transaction failed');
+    }
+  }
+  refreshMinted();
+  setInterval(refreshMinted, 60000);
+</script>
 </body>
 </html>
