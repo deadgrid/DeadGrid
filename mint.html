@@ -141,8 +141,8 @@
       <div class="row"><span>Collection</span><b>DeadGrid (DGRID)</b></div>
       <div class="row"><span>Types</span><b>30 — 10 Survivors · 10 Zombies · 10 Items</b></div>
       <div class="row"><span>Supply</span><b>3,000 (100 per type)</b></div>
-      <div class="row"><span>Price</span><b>First mint FREE · extra 0.001 BNB</b></div>
-      <div class="row"><span>Gate</span><b>Open — no Agent ID needed</b></div>
+      <div class="row"><span>Price</span><b>Agent ID: first FREE · No ID: 0.001 BNB</b></div>
+      <div class="row"><span>Gate</span><b>Agent ID lane + open lane</b></div>
       <div class="row"><span>Network</span><b>BNB Chain</b></div>
       <div class="row"><span>Contract</span><b id="nftAddr">—</b></div>
       <div class="row"><span>Minted</span><b id="nftMinted">—</b></div>
@@ -151,9 +151,10 @@
 
     <div class="card">
       <h2>MINT NOW</h2>
-      <p>First mint per wallet is FREE (gas only). Further mints cost 0.001 BNB each. Anyone can mint — no Binance Agent ID needed.</p>
+      <p><b>With Agent ID:</b> first mint per wallet FREE (gas only), further mints 0.001 BNB each.<br><b>Without Agent ID:</b> anyone can mint — every mint 0.001 BNB.</p>
       <div class="btn-row">
-        <button class="btn-action" id="mintBtn" onclick="mintNFT()">MINT — FREE FIRST</button>
+        <button class="btn-action" id="mintBtn" onclick="mintNFT('agent')">MINT WITH AGENT ID — FREE FIRST</button>
+        <button class="btn-action btn-blue" id="mintPublicBtn" onclick="mintNFT('public')">MINT WITHOUT AGENT ID — 0.001 BNB</button>
       </div>
       <p id="mintStatus" class="muted" style="margin-top:12px;">Contract not deployed yet — mint opens after deploy.</p>
     </div>
@@ -253,7 +254,7 @@
       <ol class="steps">
         <li><b>1. PLAY</b> — Enter the grid, move with WASD, shoot with SPACE. Survive as long as you can and chase your best score.</li>
         <li><b>2. SURVIVE</b> — Zombies come from every side. The longer you last, the faster they get.</li>
-        <li><b>3. MINT</b> — First mint FREE, extra mints 0.001 BNB. Anyone can mint, no Agent ID needed. 30 types, 100 each, random.</li>
+        <li><b>3. MINT</b> — With Agent ID: first mint FREE, extra 0.001 BNB. Without Agent ID: 0.001 BNB per mint. 30 types, 100 each, random.</li>
       </ol>
     </div>
 
@@ -268,6 +269,7 @@
   const NFT_CONTRACT = '0x0000000000000000000000000000000000000000';
   const NFT_ABI = [
     'function mint() payable returns (uint256)',
+    'function mintPublic() payable returns (uint256)',
     'function totalMinted() view returns (uint256)',
     'function mintOpen() view returns (bool)',
     'function mintedByWallet(address) view returns (uint256)',
@@ -287,7 +289,8 @@
     }catch(e){ el.textContent = '—'; }
   }
 
-  async function mintNFT(){
+  async function mintNFT(lane){
+    lane = lane || 'agent';
     const statusEl = document.getElementById('mintStatus');
     if (!nftEnabled){ statusEl.textContent = 'Contract not deployed yet — mint opens after deploy.'; return; }
     if (typeof ethers === 'undefined' || !window.ethereum){ statusEl.textContent = 'Open this page in a wallet browser (e.g. MetaMask).'; return; }
@@ -300,6 +303,16 @@
       const signer = await provider.getSigner();
       const addr = await signer.getAddress();
       const c = new ethers.Contract(NFT_CONTRACT, NFT_ABI, signer);
+      if (lane === 'public'){
+        const price = await c.MINT_PRICE();
+        statusEl.textContent = 'Sending mint (0.001 BNB)…';
+        const tx = await c.mintPublic({ value: price });
+        statusEl.textContent = 'Waiting for confirmation…';
+        await tx.wait();
+        statusEl.textContent = 'Minted! Check your wallet — your DeadGrid NFT is random: survivor, zombie or item.';
+        refreshMinted();
+        return;
+      }
       const already = await c.mintedByWallet(addr);
       const price = already == 0n ? 0n : await c.MINT_PRICE();
       statusEl.textContent = already == 0n ? 'Sending your FREE mint…' : 'Sending mint (0.001 BNB)…';
