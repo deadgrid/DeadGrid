@@ -6,21 +6,13 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-/// @notice Binance Agent ID registry interface — same pattern as
-/// RiferaFirstTake / RiferaCursorPieces: only `balanceOf` is used, and a
-/// wallet must hold >= 1 Agent ID to mint. No other registry function
-/// is called.
-interface IAgentId {
-    function balanceOf(address account) external view returns (uint256);
-}
-
 /// @title DeadGrid NFT
 /// @notice ERC721 collection of the DeadGrid game: 30 types — 10 Survivors,
 ///  10 Zombies, 10 Items — 100 of each, 3,000 total. Mint is random: the
 ///  type is picked from the mint hash, skipping types that are sold out.
 ///  First mint per wallet is FREE (gas only); further mints cost
-///  0.001 BNB each, exact payment. Minting requires holding a Binance
-///  Agent ID (balanceOf > 0). 100% of paid mint BNB goes straight to the
+///  0.001 BNB each, exact payment. No gate — anyone can mint, no
+///  No gate — anyone can mint. 100% of paid mint BNB goes straight to the
 ///  owner (project wallet) in the same transaction — nothing is kept in
 ///  this contract. Mint starts CLOSED; the owner opens it separately.
 ///  Artwork is hosted on the game site: tokenURI is baseURI + type
@@ -32,9 +24,6 @@ contract DeadGridNFT is ERC721, Ownable, ReentrancyGuard {
     uint256 public constant MAX_SUPPLY = 3000;
     uint256 public constant MAX_PER_TYPE = 100;
     uint256 public constant TYPE_COUNT = 30;
-
-    /// @notice Binance Agent ID NFT contract (BNB Chain mainnet).
-    IAgentId public immutable agentId;
 
     /// @notice Mint starts CLOSED. Nobody can mint until the owner opens
     ///  it with setMintOpen(true). The owner can close it again.
@@ -63,16 +52,13 @@ contract DeadGridNFT is ERC721, Ownable, ReentrancyGuard {
     ];
 
     error MintClosed();
-    error NoAgentId(address wallet);
     error SoldOut();
     error WrongPayment(uint256 expected, uint256 got);
     error PaymentFailed();
 
     event Minted(address indexed minter, uint256 indexed tokenId, uint8 indexed typeIndex, bool freeMint);
 
-    constructor(address agentId_) ERC721("DeadGrid", "DGRID") Ownable(msg.sender) {
-        require(agentId_ != address(0), "agent id is zero address");
-        agentId = IAgentId(agentId_);
+    constructor() ERC721("DeadGrid", "DGRID") Ownable(msg.sender) {
         baseURI = "https://deadgrid.github.io/DeadGrid/metadata/";
     }
 
@@ -97,7 +83,6 @@ contract DeadGridNFT is ERC721, Ownable, ReentrancyGuard {
 
     function mint() external payable nonReentrant returns (uint256 tokenId) {
         if (!mintOpen) revert MintClosed();
-        if (agentId.balanceOf(msg.sender) < 1) revert NoAgentId(msg.sender);
         if (totalMinted >= MAX_SUPPLY) revert SoldOut();
 
         bool freeMint = mintedByWallet[msg.sender] == 0;
