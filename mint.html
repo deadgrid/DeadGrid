@@ -103,6 +103,20 @@
   .chars-grid figcaption span { display:block; font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:600; color:#8fa3ad; letter-spacing:0; }
   @media (max-width:600px) { .chars-grid { grid-template-columns:repeat(2, 1fr); } }
   @media (max-width:600px) { h1 { font-size:36px; letter-spacing:5px; } p { font-size:16px; } }
+
+  body { cursor: url('assets/crosshair.png') 16 16, crosshair; }
+  input { cursor: text; }
+  .chars-grid figure { transition: transform .18s ease, box-shadow .18s ease; will-change: transform; }
+  .chars-grid figure.rar-common img { box-shadow: 0 0 10px rgba(125,255,176,.35); }
+  .chars-grid figure.rar-rare img { box-shadow: 0 0 14px rgba(127,211,255,.5); }
+  .chars-grid figure.rar-epic img { box-shadow: 0 0 16px rgba(196,77,255,.55); }
+  .chars-grid figure.rar-legendary img { box-shadow: 0 0 22px rgba(255,210,62,.75); }
+  .trailer-video { width:100%; border-radius:10px; border:1px solid rgba(111,211,255,0.35); display:block; background:#000; }
+  @keyframes titlePulse {
+    0%,100% { filter:drop-shadow(0 0 22px rgba(111,211,255,0.45)); }
+    50% { filter:drop-shadow(0 0 38px rgba(109,255,138,0.65)); }
+  }
+  h1 { animation: flicker 2.4s infinite, titlePulse 3.2s infinite; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 </head>
@@ -142,6 +156,12 @@
         <button class="btn-action" id="mintBtn" onclick="mintNFT()">MINT — FREE FIRST</button>
       </div>
       <p id="mintStatus" class="muted" style="margin-top:12px;">Contract not deployed yet — mint opens after deploy.</p>
+    </div>
+
+    <div class="card" id="trailer">
+      <h2>TRAILER — REAL GAMEPLAY</h2>
+      <video class="trailer-video" src="assets/trailer.mp4" controls autoplay muted loop playsinline></video>
+      <p class="muted" style="margin-top:10px;">Real gameplay, recorded from the game — no renders. A survivor vs the horde.</p>
     </div>
 
     <div class="card">
@@ -301,6 +321,24 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function(){});
   });
 }
+</script>
+<script>
+(function(){
+  var cards = document.querySelectorAll('.chars-grid figure');
+  cards.forEach(function(card){
+    var cap = card.querySelector('figcaption');
+    var txt = cap ? cap.textContent : '';
+    var rar = /LEGENDARY/.test(txt) ? 'legendary' : /EPIC/.test(txt) ? 'epic' : /RARE/.test(txt) ? 'rare' : 'common';
+    card.classList.add('rar-' + rar);
+    card.addEventListener('mousemove', function(e){
+      var r = card.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5;
+      var y = (e.clientY - r.top) / r.height - 0.5;
+      card.style.transform = 'perspective(500px) rotateY(' + (x * 14).toFixed(1) + 'deg) rotateX(' + (-y * 14).toFixed(1) + 'deg) scale(1.06)';
+    });
+    card.addEventListener('mouseleave', function(){ card.style.transform = ''; });
+  });
+})();
 </script>
 </body>
 </html>

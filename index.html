@@ -216,6 +216,19 @@
     .char-btn img { height:64px; }
     #startOverlay .overlay { overflow-y:auto; justify-content:flex-start; padding-top:28px; }
   }
+
+  /* custom crosshair cursor + floating spores on the start screen */
+  body { cursor: url('assets/crosshair.png') 16 16, crosshair; }
+  #playerName, input { cursor: text; }
+  #spores { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:0; }
+  #startOverlay .overlay > * { position:relative; z-index:1; }
+  #soundBtn {
+    position:fixed; top:10px; right:10px; z-index:60;
+    font-family:'Orbitron',monospace; font-weight:700; font-size:11px; letter-spacing:2px;
+    background:rgba(10,18,22,0.7); color:#6fd3ff; border:1px solid rgba(111,211,255,0.5);
+    border-radius:8px; padding:8px 12px; cursor:pointer;
+  }
+  #soundBtn:hover { background:rgba(20,35,45,0.9); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 </head>
@@ -231,8 +244,10 @@
   <div class="hud-box" id="lives">LIVES: ❤❤❤</div>
 </div>
 
+<button id="soundBtn" onclick="toggleSound()">SOUND: ON</button>
 <div id="startOverlay">
   <div class="overlay">
+    <canvas id="spores"></canvas>
     <div class="eyebrow">Sector 07 &nbsp;//&nbsp; Survival Protocol</div>
     <h1>DEAD GRID</h1>
     <div class="title-rule"></div>
@@ -249,6 +264,7 @@
     </div>
     <br>
     <a class="btn-action btn-mint" href="mint.html">Mint NFT</a>
+    <a class="btn-action ghost" href="mint.html#trailer">Watch Trailer</a>
     <div class="controls-hint">3 lives &nbsp;·&nbsp; Walker — Runner — Brute &nbsp;·&nbsp; Outer / Mid / Core</div>
   </div>
 </div>
@@ -453,6 +469,105 @@
   const shootBtn = document.getElementById('shootBtn');
   shootBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); shoot(); }, {passive:false});
 
+
+  // ---------- Retro sound (WebAudio, no audio files) ----------
+  const SFX = (function(){
+    let ctx = null, master = null, musicTimer = null, muted = false;
+    try { muted = localStorage.getItem('dg_muted') === '1'; } catch(e){}
+    function ensure(){
+      if (!ctx){
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination);
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    }
+    function tone(freq, dur, type, vol, slideTo){
+      if (muted || !ctx) return;
+      const t0 = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || 'square'; o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(slideTo, 1), t0 + dur);
+      g.gain.setValueAtTime(vol || 0.2, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g); g.connect(master);
+      o.start(t0); o.stop(t0 + dur);
+    }
+    function noise(dur, vol){
+      if (muted || !ctx) return;
+      const len = Math.floor(ctx.sampleRate * dur);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+      const s = ctx.createBufferSource(); s.buffer = buf;
+      const g = ctx.createGain(); g.gain.value = vol || 0.25;
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+      s.connect(f); f.connect(g); g.connect(master);
+      s.start(ctx.currentTime);
+    }
+    // dark ambient loop: slow minor drone notes
+    const SCALE = [55, 65.41, 82.41, 98, 110, 130.81];
+    let step = 0;
+    function startMusic(){
+      ensure();
+      if (musicTimer || muted) return;
+      musicTimer = setInterval(() => {
+        if (muted || !gameRunning) return;
+        const n = SCALE[step % SCALE.length];
+        tone(n, 1.8, 'sine', 0.10);
+        if (step % 4 === 0) tone(n/2, 2.2, 'triangle', 0.12);
+        step++;
+      }, 450);
+    }
+    function stopMusic(){ if (musicTimer){ clearInterval(musicTimer); musicTimer = null; } }
+    return {
+      unlock(){ ensure(); },
+      get muted(){ return muted; },
+      toggleMute(){
+        muted = !muted;
+        try { localStorage.setItem('dg_muted', muted ? '1' : '0'); } catch(e){}
+        if (muted) stopMusic(); else startMusic();
+        return muted;
+      },
+      shoot(){ ensure(); tone(720, 0.07, 'square', 0.12, 180); },
+      die(){ ensure(); tone(220, 0.18, 'sawtooth', 0.16, 45); noise(0.12, 0.18); },
+      hit(){ ensure(); tone(140, 0.25, 'sawtooth', 0.22, 55); noise(0.2, 0.25); },
+      coin(){ ensure(); tone(1318, 0.07, 'sine', 0.18); setTimeout(() => tone(1760, 0.1, 'sine', 0.18), 70); },
+      over(){ ensure(); stopMusic(); [392, 311, 233, 155].forEach((f, i) => setTimeout(() => tone(f, 0.4, 'triangle', 0.18), i * 220)); },
+      startMusic, stopMusic
+    };
+  })();
+  window.toggleSound = function(){
+    const m = SFX.toggleMute();
+    document.getElementById('soundBtn').textContent = m ? 'SOUND: OFF' : 'SOUND: ON';
+  };
+  try { if (SFX.muted) document.getElementById('soundBtn').textContent = 'SOUND: OFF'; } catch(e){}
+
+  // ---------- Floating spores on the start screen ----------
+  (function(){
+    const cv = document.getElementById('spores');
+    if (!cv) return;
+    const c2 = cv.getContext('2d');
+    let W = 0, H = 0;
+    const dots = [];
+    for (let i = 0; i < 42; i++) dots.push({ x: Math.random(), y: Math.random(), r: Math.random()*2.2+0.6, s: Math.random()*0.0006+0.0002, c: Math.random() < 0.5 ? '109,255,138' : '111,211,255', a: Math.random()*0.5+0.15 });
+    function resize(){ W = cv.width = cv.offsetWidth; H = cv.height = cv.offsetHeight; }
+    window.addEventListener('resize', resize); resize();
+    (function tick(){
+      requestAnimationFrame(tick);
+      if (document.getElementById('startOverlay').classList.contains('hidden')) return;
+      c2.clearRect(0, 0, W, H);
+      for (const d of dots){
+        d.y -= d.s; d.x += Math.sin(d.y * 40) * 0.0002;
+        if (d.y < -0.02){ d.y = 1.02; d.x = Math.random(); }
+        c2.beginPath();
+        c2.arc(d.x * W, d.y * H, d.r, 0, Math.PI * 2);
+        c2.fillStyle = 'rgba(' + d.c + ',' + d.a + ')';
+        c2.fill();
+      }
+    })();
+  })();
+
   // ---------- Game logic ----------
   function getNearestZombie(){
     let target = null, minDist = Infinity;
@@ -488,6 +603,7 @@
     });
 
     spawnMuzzleFlash(mx, my, player.angle);
+    SFX.shoot();
     spawnShellCasing(player.x, player.y, player.angle);
   }
 
@@ -716,6 +832,7 @@
         zombies.splice(i,1);
         lives -= 1;
         hitFlash = 1;
+        SFX.hit();
         spawnExplosion(player.x, player.y, '#ff6b6b');
         updateHUD();
         if (lives <= 0){
@@ -740,6 +857,7 @@
         bnbEarned += c.value;
         localStorage.setItem('dg_bnb', bnbEarned.toFixed(6));
         floaters.push({ x: player.x, y: player.y - 30, text: '+0.000001 BNB', life: 60, maxLife: 60 });
+        SFX.coin();
         updateHUD();
       }
     }
@@ -760,6 +878,7 @@
         enemyShots.splice(i,1);
         lives -= 1;
         hitFlash = 1;
+        SFX.hit();
         spawnExplosion(player.x, player.y, '#b8ff4d');
         updateHUD();
         if (lives <= 0){ endGame(); return; }
@@ -779,12 +898,14 @@
           z.hp = (z.hp || 1) - (b.dmg || 1);
           if (z.hp > 0) break; // Brute takes 3 hits (2 with a 2-damage character)
           spawnZombieDeath(z.x, z.y);
+          SFX.die();
           // Boomer: explodes when killed — hurts the player if close
           if (z.type === 'boomer'){
             spawnExplosion(z.x, z.y, '#ff6b1a');
             if (Math.hypot(player.x-z.x, player.y-z.y) < 110){
               lives -= 1;
               hitFlash = 1;
+              SFX.hit();
               spawnExplosion(player.x, player.y, '#ff6b6b');
               updateHUD();
             }
@@ -1484,6 +1605,7 @@
 
   function endGame(){
     gameRunning = false;
+    SFX.over();
     saveHighScore();
     finalScoreEl.textContent = 'Score: ' + score;
     finalHighEl.textContent = 'Best: ' + highScore + '  ·  BNB: ' + bnbEarned.toFixed(6);
@@ -1494,6 +1616,8 @@
   }
 
   window.startGame = function(){
+    SFX.unlock();
+    SFX.startMusic();
     startOverlay.classList.add('hidden');
     gameOverOverlay.classList.add('hidden');
     initState();
