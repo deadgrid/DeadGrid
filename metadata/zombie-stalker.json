@@ -1,0 +1,27 @@
+{
+  "name": "Stalker \u2014 DeadGrid Zombie",
+  "description": "Stalker, one of the 10 zombie enemies of DEAD GRID. 1 HP, 25 points in-game, appears at score 120+.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/zombies/stalker.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Zombie"
+    },
+    {
+      "trait_type": "Character",
+      "value": "Stalker"
+    },
+    {
+      "trait_type": "HP",
+      "value": 1
+    },
+    {
+      "trait_type": "Points",
+      "value": 25
+    },
+    {
+      "trait_type": "Appears at score",
+      "value": "120+"
+    }
+  ]
+}

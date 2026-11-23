@@ -1,0 +1,23 @@
+{
+  "name": "Reaper Scythe \u2014 DeadGrid Item",
+  "description": "Reaper Scythe, the weapon of REAPER. One of the 10 items of DEAD GRID.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/items/scythe.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Item"
+    },
+    {
+      "trait_type": "Item",
+      "value": "Reaper Scythe"
+    },
+    {
+      "trait_type": "Wielder",
+      "value": "REAPER"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Ice Crystal \u2014 DeadGrid Item",
+  "description": "Ice Crystal, the weapon of FROST. One of the 10 items of DEAD GRID.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/items/crystal.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Item"
+    },
+    {
+      "trait_type": "Item",
+      "value": "Ice Crystal"
+    },
+    {
+      "trait_type": "Wielder",
+      "value": "FROST"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    }
+  ]
+}

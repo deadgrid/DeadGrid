@@ -1,0 +1,35 @@
+{
+  "name": "VEX \u2014 DeadGrid Survivor",
+  "description": "VEX, the Scout. One of the 10 survivors of DEAD GRID. Playable in the game at deadgrid.github.io/DeadGrid.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/char-vex.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Survivor"
+    },
+    {
+      "trait_type": "Character",
+      "value": "VEX"
+    },
+    {
+      "trait_type": "Role",
+      "value": "Scout"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Speed",
+      "value": 5.2
+    },
+    {
+      "trait_type": "Damage",
+      "value": 1
+    },
+    {
+      "trait_type": "Lives",
+      "value": 3
+    }
+  ]
+}

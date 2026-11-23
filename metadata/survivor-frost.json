@@ -1,0 +1,35 @@
+{
+  "name": "FROST \u2014 DeadGrid Survivor",
+  "description": "FROST, the Cryo. One of the 10 survivors of DEAD GRID. Playable in the game at deadgrid.github.io/DeadGrid.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/char-frost.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Survivor"
+    },
+    {
+      "trait_type": "Character",
+      "value": "FROST"
+    },
+    {
+      "trait_type": "Role",
+      "value": "Cryo"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Speed",
+      "value": 4.0
+    },
+    {
+      "trait_type": "Damage",
+      "value": 1
+    },
+    {
+      "trait_type": "Lives",
+      "value": 4
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "VOLT \u2014 DeadGrid Survivor",
+  "description": "VOLT, the Striker. One of the 10 survivors of DEAD GRID. Playable in the game at deadgrid.github.io/DeadGrid.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/char-volt.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Survivor"
+    },
+    {
+      "trait_type": "Character",
+      "value": "VOLT"
+    },
+    {
+      "trait_type": "Role",
+      "value": "Striker"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Speed",
+      "value": 5.0
+    },
+    {
+      "trait_type": "Damage",
+      "value": 2
+    },
+    {
+      "trait_type": "Lives",
+      "value": 2
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "BULWARK \u2014 DeadGrid Survivor",
+  "description": "BULWARK, the Tank. One of the 10 survivors of DEAD GRID. Playable in the game at deadgrid.github.io/DeadGrid.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/char-bulwark.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Survivor"
+    },
+    {
+      "trait_type": "Character",
+      "value": "BULWARK"
+    },
+    {
+      "trait_type": "Role",
+      "value": "Tank"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Speed",
+      "value": 3.4
+    },
+    {
+      "trait_type": "Damage",
+      "value": 1
+    },
+    {
+      "trait_type": "Lives",
+      "value": 5
+    }
+  ]
+}

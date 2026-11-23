@@ -1,0 +1,27 @@
+{
+  "name": "Wraith \u2014 DeadGrid Zombie",
+  "description": "Wraith, one of the 10 zombie enemies of DEAD GRID. 2 HP, 40 points in-game, appears at score 300+.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/zombies/wraith.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Zombie"
+    },
+    {
+      "trait_type": "Character",
+      "value": "Wraith"
+    },
+    {
+      "trait_type": "HP",
+      "value": 2
+    },
+    {
+      "trait_type": "Points",
+      "value": 40
+    },
+    {
+      "trait_type": "Appears at score",
+      "value": "300+"
+    }
+  ]
+}

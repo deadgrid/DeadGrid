@@ -1,0 +1,27 @@
+{
+  "name": "Walker \u2014 DeadGrid Zombie",
+  "description": "Walker, one of the 10 zombie enemies of DEAD GRID. 1 HP, 10 points in-game, appears at score 0+.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/zombies/walker.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Zombie"
+    },
+    {
+      "trait_type": "Character",
+      "value": "Walker"
+    },
+    {
+      "trait_type": "HP",
+      "value": 1
+    },
+    {
+      "trait_type": "Points",
+      "value": 10
+    },
+    {
+      "trait_type": "Appears at score",
+      "value": "0+"
+    }
+  ]
+}

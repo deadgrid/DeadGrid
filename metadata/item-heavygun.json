@@ -1,0 +1,23 @@
+{
+  "name": "Heavy Gun \u2014 DeadGrid Item",
+  "description": "Heavy Gun, the weapon of NOVA. One of the 10 items of DEAD GRID.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/items/heavygun.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Item"
+    },
+    {
+      "trait_type": "Item",
+      "value": "Heavy Gun"
+    },
+    {
+      "trait_type": "Wielder",
+      "value": "NOVA"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    }
+  ]
+}

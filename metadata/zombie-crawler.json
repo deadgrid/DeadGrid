@@ -1,0 +1,27 @@
+{
+  "name": "Crawler \u2014 DeadGrid Zombie",
+  "description": "Crawler, one of the 10 zombie enemies of DEAD GRID. 1 HP, 15 points in-game, appears at score 30+.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/zombies/crawler.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Zombie"
+    },
+    {
+      "trait_type": "Character",
+      "value": "Crawler"
+    },
+    {
+      "trait_type": "HP",
+      "value": 1
+    },
+    {
+      "trait_type": "Points",
+      "value": 15
+    },
+    {
+      "trait_type": "Appears at score",
+      "value": "30+"
+    }
+  ]
+}

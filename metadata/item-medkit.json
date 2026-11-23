@@ -1,0 +1,23 @@
+{
+  "name": "Medkit \u2014 DeadGrid Item",
+  "description": "Medkit, the weapon of MEDIX. One of the 10 items of DEAD GRID.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/items/medkit.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Item"
+    },
+    {
+      "trait_type": "Item",
+      "value": "Medkit"
+    },
+    {
+      "trait_type": "Wielder",
+      "value": "MEDIX"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    }
+  ]
+}

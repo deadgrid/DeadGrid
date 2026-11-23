@@ -1,0 +1,23 @@
+{
+  "name": "Phantom Dagger \u2014 DeadGrid Item",
+  "description": "Phantom Dagger, the weapon of GHOST. One of the 10 items of DEAD GRID.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/items/dagger.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Item"
+    },
+    {
+      "trait_type": "Item",
+      "value": "Phantom Dagger"
+    },
+    {
+      "trait_type": "Wielder",
+      "value": "GHOST"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "REAPER \u2014 DeadGrid Survivor",
+  "description": "REAPER, the Hunter. One of the 10 survivors of DEAD GRID. Playable in the game at deadgrid.github.io/DeadGrid.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/char-reaper.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Survivor"
+    },
+    {
+      "trait_type": "Character",
+      "value": "REAPER"
+    },
+    {
+      "trait_type": "Role",
+      "value": "Hunter"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Speed",
+      "value": 4.6
+    },
+    {
+      "trait_type": "Damage",
+      "value": 2
+    },
+    {
+      "trait_type": "Lives",
+      "value": 3
+    }
+  ]
+}

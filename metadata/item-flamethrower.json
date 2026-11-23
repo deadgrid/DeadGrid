@@ -1,0 +1,23 @@
+{
+  "name": "Flamethrower \u2014 DeadGrid Item",
+  "description": "Flamethrower, the weapon of BLAZE. One of the 10 items of DEAD GRID.",
+  "image": "https://deadgrid.github.io/DeadGrid/assets/items/flamethrower.png",
+  "attributes": [
+    {
+      "trait_type": "Type",
+      "value": "Item"
+    },
+    {
+      "trait_type": "Item",
+      "value": "Flamethrower"
+    },
+    {
+      "trait_type": "Wielder",
+      "value": "BLAZE"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    }
+  ]
+}
