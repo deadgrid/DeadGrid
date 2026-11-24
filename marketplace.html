@@ -217,6 +217,19 @@
   ];
   const mktEnabled = MARKETPLACE_CONTRACT !== '0x0000000000000000000000000000000000000000';
   const metaCache = {};
+  // Several public BSC RPCs: a slow phone often fails the first one, so
+  // every read tries them in order until one answers.
+  const READ_RPCS = ['https://bsc-dataseed.binance.org/', 'https://bsc-dataseed1.binance.org/', 'https://bsc-dataseed2.binance.org/', 'https://rpc-bsc.48.club'];
+  async function readProvider(){
+    for (const url of READ_RPCS){
+      try{
+        const p = new ethers.JsonRpcProvider(url);
+        await p.getBlockNumber();
+        return p;
+      }catch(e){}
+    }
+    throw new Error('No BSC RPC reachable');
+  }
 
   function shortAddr(a){ return a.slice(0, 6) + '…' + a.slice(-4); }
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -252,7 +265,7 @@
     if (!mktEnabled || typeof ethers === 'undefined'){ el.innerHTML = '<p class="muted">Marketplace not deployed yet.</p>'; countEl.textContent = '—'; return; }
     el.innerHTML = '<p class="muted">Loading listings…</p>';
     try{
-      const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
+      const provider = await readProvider();
       const mkt = new ethers.Contract(MARKETPLACE_CONTRACT, MARKET_ABI, provider);
       const n = Number(await mkt.nextListingId());
       let html = '';
@@ -359,7 +372,7 @@
     try{
       const w = await getSignerContract();
       const wallet = w.address.toLowerCase();
-      const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
+      const provider = await readProvider();
       const latest = await provider.getBlockNumber();
       const owned = new Set();
       const CHUNK = 5000;
@@ -403,7 +416,7 @@
     document.getElementById('mktAddr').textContent = MARKETPLACE_CONTRACT;
     document.getElementById('mktBadge').textContent = 'LIVE';
     try{
-      const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
+      const provider = await readProvider();
       const mkt = new ethers.Contract(MARKETPLACE_CONTRACT, MARKET_ABI, provider);
       const fee = await mkt.feeBps();
       document.getElementById('mktFee').textContent = (Number(fee) / 100) + '%';

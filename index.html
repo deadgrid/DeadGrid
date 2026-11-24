@@ -1635,16 +1635,26 @@
   };
 
   // ---------- On-chain leaderboard (24h) + Post to X ----------
-  // Set by the deployer: paste the DeadGridScores contract address here
-  // after deploying via leaderboard-deploy.html. Until then the board
-  // shows "opens after deploy" and Save is disabled.
+  // DeadGridScores (deployed): 0x4264d2589E365FcC896f26C994B32d2Bf26906C8
   const LEADERBOARD_CONTRACT = '0x4264d2589E365FcC896f26C994B32d2Bf26906C8';
   const SCORES_ABI = [
     'function currentDay() view returns (uint256)',
     'function getTop(uint256 day) view returns (tuple(address player, string name, uint256 score, uint256 bnbMicro)[10] board, uint256 count)',
     'function submitScore(string name, uint256 score, uint256 bnbMicro)'
   ];
-  const BSC_RPC = 'https://bsc-dataseed.binance.org/';
+  // Several public BSC RPCs: a slow phone often fails the first one, so
+  // every read tries them in order until one answers.
+  const READ_RPCS = ['https://bsc-dataseed.binance.org/', 'https://bsc-dataseed1.binance.org/', 'https://bsc-dataseed2.binance.org/', 'https://rpc-bsc.48.club'];
+  async function readProvider(){
+    for (const url of READ_RPCS){
+      try{
+        const p = new ethers.JsonRpcProvider(url);
+        await p.getBlockNumber();
+        return p;
+      }catch(e){}
+    }
+    throw new Error('No BSC RPC reachable');
+  }
   const boardEnabled = LEADERBOARD_CONTRACT !== '0x0000000000000000000000000000000000000000';
 
   function fmtBnb(micro){ return (Number(micro) / 1000000).toFixed(6); }
@@ -1657,7 +1667,7 @@
       return;
     }
     try{
-      const provider = new ethers.JsonRpcProvider(BSC_RPC);
+      const provider = await readProvider();
       const c = new ethers.Contract(LEADERBOARD_CONTRACT, SCORES_ABI, provider);
       const day = await c.currentDay();
       const [board, count] = await c.getTop(day);
@@ -1706,7 +1716,7 @@
     const name = (document.getElementById('playerName').value || '').trim();
     const who = name ? name + ' ' : '';
     const text = who + 'scored ' + score + ' pts as ' + selectedChar.name + ' in DEAD GRID and collected ' + bnbEarned.toFixed(6) + ' BNB from zombies! Can you beat me?';
-    const url = 'https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent('https://deadgrid.github.io/DeadGrid/');
+    const url = 'https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent('https://deadgridprotocol.fun/');
     window.open(url, '_blank');
   };
 
