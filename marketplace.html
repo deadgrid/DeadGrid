@@ -262,7 +262,7 @@
   async function refreshListings(){
     const el = document.getElementById('listings');
     const countEl = document.getElementById('mktCount');
-    if (!mktEnabled || typeof ethers === 'undefined'){ el.innerHTML = '<p class="muted">Marketplace not deployed yet.</p>'; countEl.textContent = '—'; return; }
+    if (!mktEnabled || typeof ethers === 'undefined'){ el.innerHTML = '<p class="muted">Marketplace could not load — check your connection and refresh.</p>'; countEl.textContent = '—'; return; }
     el.innerHTML = '<p class="muted">Loading listings…</p>';
     try{
       const provider = await readProvider();
@@ -378,6 +378,7 @@
       const CHUNK = 5000;
       for (let from = NFT_DEPLOY_BLOCK; from <= latest; from += CHUNK){
         const to = Math.min(from + CHUNK - 1, latest);
+        statusEl.textContent = 'Scanning… block ' + from + '–' + to + ' of ' + latest;
         const logs = await provider.getLogs({ address: NFT_CONTRACT, topics: [TRANSFER_TOPIC], fromBlock: from, toBlock: to });
         for (const log of logs){
           const fromAddr = '0x' + log.topics[1].slice(26).toLowerCase();
@@ -387,7 +388,7 @@
           if (fromAddr === wallet) owned.delete(tokenId);
         }
       }
-      if (owned.size === 0){ el.innerHTML = '<p class="muted">You own no DeadGrid NFTs yet. Mint one first.</p>'; return; }
+      if (owned.size === 0){ el.innerHTML = '<p class="muted">You own no DeadGrid NFTs yet. Mint one first.</p>'; statusEl.textContent = ''; return; }
       let html = '';
       for (const tokenId of owned){
         const meta = await fetchMeta(provider, tokenId);
