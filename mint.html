@@ -140,7 +140,7 @@
   <div class="wrap">
     <h1>MINT</h1>
     <div class="subtitle">Human vs Zombie Survival</div>
-    <div class="badge">DEPLOYED · MINT CLOSED</div>
+    <div class="badge">DEPLOYED · MINT OPEN</div>
     <p>Survive the grid. Own your survivor.</p>
     <p class="muted">The survivor you play in the game — the one who moves with WASD, shoots with SPACE, and holds 3 lives against the zombies — is what this mint is about.</p>
 
@@ -164,7 +164,7 @@
         <button class="btn-action" id="mintBtn" onclick="mintNFT('agent')">MINT WITH AGENT ID — FREE FIRST</button>
         <button class="btn-action btn-blue" id="mintPublicBtn" onclick="mintNFT('public')">MINT WITHOUT AGENT ID — 0.001 BNB</button>
       </div>
-      <p id="mintStatus" class="muted" style="margin-top:12px;">Contract deployed — mint is closed until the owner opens it.</p>
+      <p id="mintStatus" class="muted" style="margin-top:12px;">Contract deployed — mint is OPEN. Mint with Agent ID (first FREE) or without Agent ID (0.001 BNB).</p>
     </div>
 
     <div class="card" id="trailer">
@@ -286,16 +286,22 @@
   ];
   const nftEnabled = NFT_CONTRACT !== '0x0000000000000000000000000000000000000000';
 
+  const READ_RPCS = ['https://bsc-dataseed.binance.org/', 'https://bsc-dataseed1.binance.org/', 'https://bsc-dataseed2.binance.org/', 'https://rpc-bsc.48.club'];
   async function refreshMinted(){
     const el = document.getElementById('nftMinted');
     const addrEl = document.getElementById('nftAddr');
     if (!nftEnabled || typeof ethers === 'undefined'){ el.textContent = '—'; addrEl.textContent = '—'; return; }
     addrEl.textContent = NFT_CONTRACT;
-    try{
-      const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
-      const c = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
-      el.textContent = (await c.totalMinted()) + ' / 3000';
-    }catch(e){ el.textContent = '—'; }
+    let minted = null;
+    for (const url of READ_RPCS){
+      try{
+        const provider = new ethers.JsonRpcProvider(url);
+        const c = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
+        minted = await c.totalMinted();
+        break;
+      }catch(e){}
+    }
+    el.textContent = minted === null ? '—' : minted + ' / 3000';
   }
 
   async function mintNFT(lane){
