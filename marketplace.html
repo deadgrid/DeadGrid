@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DEAD GRID — MARKETPLACE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#05060a">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="shortcut icon" href="assets/favicon.ico">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta property="og:title" content="DEAD GRID — Marketplace">
+<meta property="og:description" content="Buy and sell DeadGrid NFTs. Fixed-price listings, 2.5% marketplace fee, on BNB Chain.">
+<meta property="og:image" content="https://deadgridprotocol.fun/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:url" content="https://deadgridprotocol.fun/marketplace.html">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DEAD GRID — Marketplace">
+<meta name="twitter:description" content="Buy and sell DeadGrid NFTs. Fixed-price listings, 2.5% marketplace fee, on BNB Chain.">
+<meta name="twitter:image" content="https://deadgridprotocol.fun/assets/og-image.png">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    width:100%; min-height:100%;
+    background:#05060a;
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;
+    color:#cfd8e3;
+  }
+  body {
+    background: radial-gradient(ellipse at center, #14181f 0%, #05060a 70%);
+  }
+  .top {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:16px 20px;
+    border-bottom:1px solid rgba(110,255,150,0.2);
+  }
+  .top .logo { font-family:'Orbitron',monospace; font-weight:900; color:#7fd3ff; font-size:20px; letter-spacing:4px; text-decoration:none; text-shadow:0 0 12px rgba(80,180,255,0.8); }
+  .top nav a { font-family:'Orbitron',monospace; font-weight:700; color:#9dffa8; font-size:13px; letter-spacing:2px; text-decoration:none; margin-left:20px; }
+  .top nav a.active { color:#fff; border-bottom:1px solid #9dffa8; }
+  .wrap { max-width:720px; margin:0 auto; padding:36px 20px 60px; text-align:center; }
+  h1 {
+    font-family:'Orbitron',monospace; font-weight:900;
+    font-size:clamp(36px, 10vw, 64px); line-height:0.95; letter-spacing:6px;
+    background:linear-gradient(180deg, #ffffff 15%, #6fd3ff 55%, #6dff8a 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 22px rgba(111,211,255,0.45));
+    margin-bottom:10px;
+    animation:flicker 2.4s infinite, titlePulse 3.2s infinite;
+  }
+  @keyframes flicker {
+    0%,100% { opacity:1; }
+    45% { opacity:0.85; }
+    50% { opacity:0.6; }
+    55% { opacity:0.9; }
+  }
+  @keyframes titlePulse {
+    0%,100% { filter:drop-shadow(0 0 22px rgba(111,211,255,0.45)); }
+    50% { filter:drop-shadow(0 0 38px rgba(109,255,138,0.65)); }
+  }
+  .subtitle { font-family:'Orbitron',monospace; font-weight:700; color:#8fa3ad; font-size:13px; letter-spacing:6px; margin-bottom:24px; text-transform:uppercase; }
+  p { font-size:18px; margin:8px 0; line-height:1.5; }
+  .muted { color:#6b7785; font-size:15px; }
+  .card {
+    margin:28px 0; padding:20px;
+    background:rgba(10,12,16,0.6);
+    border:1px solid rgba(110,255,150,0.35);
+    border-radius:10px;
+    box-shadow:0 0 12px rgba(110,255,150,0.15);
+    text-align:left;
+  }
+  .card h2 { font-family:'Orbitron',monospace; font-weight:800; color:#9dffa8; font-size:16px; letter-spacing:3px; margin-bottom:12px; text-shadow:0 0 8px rgba(110,255,150,0.8); }
+  .card .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:16px; }
+  .card .row:last-child { border-bottom:none; }
+  .card .row b { color:#7fd3ff; font-weight:normal; }
+  .badge { font-family:'Orbitron',monospace; font-weight:700;
+    display:inline-block; padding:6px 14px; margin-bottom:16px;
+    border:1px solid rgba(255,107,107,0.6); border-radius:8px;
+    color:#ff6b6b; font-size:14px; letter-spacing:2px;
+    text-shadow:0 0 8px rgba(255,80,80,0.8);
+  }
+  .btn-action {
+    display:inline-block; margin-top:20px;
+    padding:14px 36px;
+    font-size:18px; font-family:'Rajdhani','Segoe UI',system-ui,sans-serif; letter-spacing:2px;
+    background:linear-gradient(145deg, #1b2a1f, #0c1410);
+    color:#9dffa8; border:2px solid #4caf50; border-radius:10px;
+    cursor:pointer; text-decoration:none;
+    box-shadow:0 0 18px rgba(80,255,120,0.4);
+    transition:all 0.15s ease;
+  }
+  .btn-action:hover { background:linear-gradient(145deg,#27402d,#142016); box-shadow:0 0 30px rgba(80,255,120,0.7); transform:scale(1.05); }
+  .btn-action:disabled, .btn-action.disabled {
+    opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none;
+  }
+  .btn-blue { border-color:#2196f3; color:#7fd3ff; box-shadow:0 0 18px rgba(80,180,255,0.4); }
+  .btn-blue:hover { box-shadow:0 0 30px rgba(80,180,255,0.7); }
+  .btn-red { border-color:#f44336; color:#ff8a80; box-shadow:0 0 18px rgba(255,80,80,0.35); }
+  .btn-red:hover { box-shadow:0 0 30px rgba(255,80,80,0.6); }
+  .btn-small { padding:8px 18px; font-size:15px; margin-top:10px; }
+  .x-link { display:inline-block; margin-top:18px; font-family:'Orbitron',monospace; font-size:13px; letter-spacing:2px; color:#7fd3ff; text-decoration:none; border:1px solid rgba(127,211,255,0.4); border-radius:8px; padding:9px 16px; }
+  .x-link:hover { background:rgba(127,211,255,0.12); }
+  .btn-row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+  .form-row { display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; }
+  .form-row input {
+    flex:1; min-width:120px;
+    background:#0a1216; border:1px solid rgba(127,211,255,0.4); border-radius:8px;
+    color:#e8f4f8; font-family:'Rajdhani',sans-serif; font-size:17px; font-weight:600;
+    padding:12px 14px; outline:none;
+  }
+  .form-row input:focus { border-color:#6fd3ff; box-shadow:0 0 12px rgba(111,211,255,0.35); }
+  .list-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:14px; margin-top:14px; }
+  .list-card { background:#0a1216; border:1px solid rgba(127,211,255,0.3); border-radius:10px; padding:12px; text-align:center; }
+  .list-card img { width:100%; aspect-ratio:1; object-fit:cover; object-position:top; border-radius:8px; display:block; background:#05060a; }
+  .list-card .name { font-family:'Orbitron',monospace; font-size:13px; font-weight:700; letter-spacing:1px; margin-top:8px; color:#e8f1f2; }
+  .list-card .meta { font-size:14px; color:#8fa3ad; margin-top:2px; }
+  .list-card .price { font-family:'Orbitron',monospace; font-size:16px; font-weight:700; color:#6dff8a; margin-top:6px; }
+  .list-card .seller { font-size:13px; color:#6b7785; margin-top:2px; word-break:break-all; }
+  @media (max-width:600px) { .list-grid { grid-template-columns:repeat(2, 1fr); } h1 { font-size:36px; letter-spacing:5px; } p { font-size:16px; } }
+
+  body { cursor: url('assets/crosshair.png') 16 16, crosshair; }
+  input { cursor: text; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <div class="top">
+    <a class="logo" href="index.html">DEAD GRID</a>
+    <nav>
+      <a href="index.html">PLAY</a>
+      <a href="mint.html">MINT</a>
+      <a href="marketplace.html" class="active">MARKETPLACE</a>
+    </nav>
+  </div>
+
+  <div class="wrap">
+    <h1>MARKETPLACE</h1>
+    <div class="subtitle">Buy &amp; Sell DeadGrid NFTs</div>
+    <div class="badge" id="mktBadge">NOT DEPLOYED YET</div>
+    <p>Fixed-price listings for DeadGrid NFTs. Your NFT goes into escrow when you list it, and comes back if you cancel.</p>
+    <p class="muted">Marketplace fee 2.5% of the sale price. No offers, no auctions.</p>
+
+    <div class="card">
+      <h2>ABOUT THE MARKETPLACE</h2>
+      <div class="row"><span>Collection</span><b>DeadGrid (DGRID)</b></div>
+      <div class="row"><span>NFT contract</span><b id="nftAddr">—</b></div>
+      <div class="row"><span>Marketplace</span><b id="mktAddr">—</b></div>
+      <div class="row"><span>Fee</span><b id="mktFee">2.5%</b></div>
+      <div class="row"><span>Active listings</span><b id="mktCount">—</b></div>
+      <div class="row"><span>Network</span><b>BNB Chain</b></div>
+    </div>
+
+    <div class="card">
+      <h2>LIST YOUR NFT</h2>
+      <p class="muted">Enter your token ID and a price in BNB. You must own the token. The marketplace is approved to hold it while listed — approve once if asked.</p>
+      <div class="form-row">
+        <input id="listTokenId" type="number" min="1" placeholder="Token ID (e.g. 12)">
+        <input id="listPrice" type="text" inputmode="decimal" placeholder="Price in BNB (e.g. 0.05)">
+      </div>
+      <div class="btn-row">
+        <button class="btn-action" id="listBtn" onclick="listNFT()">LIST FOR SALE</button>
+      </div>
+      <p id="listStatus" class="muted" style="margin-top:12px;">Marketplace not deployed yet.</p>
+    </div>
+
+    <div class="card">
+      <h2>ACTIVE LISTINGS</h2>
+      <div class="btn-row" style="justify-content:flex-start;">
+        <button class="btn-action btn-blue btn-small" id="refreshBtn" onclick="refreshListings()">REFRESH</button>
+      </div>
+      <div id="listings"><p class="muted">Marketplace not deployed yet.</p></div>
+    </div>
+
+    <div class="card">
+      <h2>MY NFTS</h2>
+      <p class="muted">Tokens owned by your connected wallet. Tap LIST on one to pre-fill the form above.</p>
+      <div class="btn-row" style="justify-content:flex-start;">
+        <button class="btn-action btn-blue btn-small" id="myNftsBtn" onclick="refreshMyNFTs()">CONNECT &amp; SHOW MY NFTS</button>
+      </div>
+      <div id="myNfts"><p class="muted">Connect your wallet to see your NFTs.</p></div>
+      <p id="myNftsStatus" class="muted" style="margin-top:12px;"></p>
+    </div>
+
+    <div class="btn-row">
+      <a class="btn-action btn-blue" href="mint.html">MINT NFT</a>
+      <a class="btn-action btn-blue" href="index.html">PLAY THE GAME</a>
+    </div>
+    <div style="text-align:center;"><a class="x-link" href="https://x.com/DeadGridNft" target="_blank" rel="noopener">𝕏 Follow @DeadGridNft</a></div>
+  </div>
+<script>
+  // Set by the deployer: paste the DeadGridMarketplace contract address here
+  // after deploying via marketplace-deploy.html.
+  const MARKETPLACE_CONTRACT = '0x0000000000000000000000000000000000000000';
+  const NFT_CONTRACT = '0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF';
+  // Block the NFT contract was deployed in (found on-chain).
+  const NFT_DEPLOY_BLOCK = 135385378;
+  const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+  const MARKET_ABI = [
+    'function list(uint256 tokenId, uint256 price) returns (uint256)',
+    'function buy(uint256 listingId) payable',
+    'function cancel(uint256 listingId)',
+    'function listings(uint256) view returns (uint256 id, address seller, uint256 tokenId, uint256 price, bool active)',
+    'function nextListingId() view returns (uint256)',
+    'function feeBps() view returns (uint256)'
+  ];
+  const NFT_ABI = [
+    'function ownerOf(uint256 tokenId) view returns (address)',
+    'function tokenURI(uint256 tokenId) view returns (string)',
+    'function totalMinted() view returns (uint256)',
+    'function setApprovalForAll(address operator, bool approved)',
+    'function isApprovedForAll(address owner, address operator) view returns (bool)'
+  ];
+  const mktEnabled = MARKETPLACE_CONTRACT !== '0x0000000000000000000000000000000000000000';
+  const metaCache = {};
+
+  function shortAddr(a){ return a.slice(0, 6) + '…' + a.slice(-4); }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  async function fetchMeta(provider, tokenId){
+    if (metaCache[tokenId]) return metaCache[tokenId];
+    try{
+      const nft = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
+      const uri = await nft.tokenURI(tokenId);
+      const res = await fetch(uri);
+      const meta = await res.json();
+      metaCache[tokenId] = meta;
+      return meta;
+    }catch(e){ return { name: 'DeadGrid #' + tokenId, image: '', attributes: [] }; }
+  }
+
+  function rarityOf(meta){
+    const a = (meta.attributes || []).find(function(x){ return x.trait_type === 'Rarity'; });
+    return a ? a.value : '';
+  }
+
+  function cardHtml(meta, tokenId, extra){
+    const img = meta.image ? '<img src="' + esc(meta.image) + '" alt="' + esc(meta.name || ('#' + tokenId)) + '">' : '';
+    return '<div class="list-card">' + img +
+      '<div class="name">' + esc(meta.name || ('DeadGrid #' + tokenId)) + '</div>' +
+      '<div class="meta">Token #' + tokenId + (rarityOf(meta) ? ' · ' + esc(rarityOf(meta)) : '') + '</div>' +
+      extra + '</div>';
+  }
+
+  async function refreshListings(){
+    const el = document.getElementById('listings');
+    const countEl = document.getElementById('mktCount');
+    if (!mktEnabled || typeof ethers === 'undefined'){ el.innerHTML = '<p class="muted">Marketplace not deployed yet.</p>'; countEl.textContent = '—'; return; }
+    el.innerHTML = '<p class="muted">Loading listings…</p>';
+    try{
+      const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
+      const mkt = new ethers.Contract(MARKETPLACE_CONTRACT, MARKET_ABI, provider);
+      const n = Number(await mkt.nextListingId());
+      let html = '';
+      let active = 0;
+      let wallet = null;
+      if (window.ethereum){
+        try{
+          const bp = new ethers.BrowserProvider(window.ethereum);
+          const accounts = await bp.listAccounts();
+          if (accounts.length) wallet = accounts[0].address.toLowerCase();
+        }catch(e){}
+      }
+      for (let i = 0; i < n; i++){
+        const l = await mkt.listings(i);
+        if (!l.active) continue;
+        active++;
+        const meta = await fetchMeta(provider, Number(l.tokenId));
+        const price = ethers.formatEther(l.price);
+        const isMine = wallet && l.seller.toLowerCase() === wallet;
+        const btn = isMine
+          ? '<button class="btn-action btn-red btn-small" onclick="cancelListing(' + i + ')">CANCEL</button>'
+          : '<button class="btn-action btn-small" onclick="buyListing(' + i + ', \'' + l.price.toString() + '\')">BUY — ' + price + ' BNB</button>';
+        html += cardHtml(meta, Number(l.tokenId),
+          '<div class="price">' + price + ' BNB</div>' +
+          '<div class="seller">Seller ' + esc(shortAddr(l.seller)) + '</div>' + btn);
+      }
+      countEl.textContent = active;
+      el.innerHTML = html ? '<div class="list-grid">' + html + '</div>' : '<p class="muted">No active listings yet. Be the first to list one.</p>';
+    }catch(e){ el.innerHTML = '<p class="muted">Could not load listings. Try again.</p>'; }
+  }
+
+  async function getSignerContract(){
+    if (typeof ethers === 'undefined' || !window.ethereum) throw new Error('Open this page in a wallet browser (e.g. MetaMask).');
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send('eth_requestAccounts', []);
+    const net = await provider.getNetwork();
+    if (net.chainId !== 56n) throw new Error('Switch your wallet to BNB Chain mainnet.');
+    const signer = await provider.getSigner();
+    return { signer: signer, address: await signer.getAddress() };
+  }
+
+  async function listNFT(){
+    const statusEl = document.getElementById('listStatus');
+    if (!mktEnabled){ statusEl.textContent = 'Marketplace not deployed yet.'; return; }
+    const tokenId = document.getElementById('listTokenId').value.trim();
+    const priceStr = document.getElementById('listPrice').value.trim();
+    if (!tokenId || !priceStr){ statusEl.textContent = 'Enter a token ID and a price.'; return; }
+    try{
+      const price = ethers.parseEther(priceStr);
+      if (price <= 0n){ statusEl.textContent = 'Price must be above 0 BNB.'; return; }
+      statusEl.textContent = 'Connecting wallet…';
+      const w = await getSignerContract();
+      const nft = new ethers.Contract(NFT_CONTRACT, NFT_ABI, w.signer);
+      const mkt = new ethers.Contract(MARKETPLACE_CONTRACT, MARKET_ABI, w.signer);
+      const owner = await nft.ownerOf(BigInt(tokenId));
+      if (owner.toLowerCase() !== w.address.toLowerCase()){ statusEl.textContent = 'You do not own token #' + tokenId + '.'; return; }
+      const approved = await nft.isApprovedForAll(w.address, MARKETPLACE_CONTRACT);
+      if (!approved){
+        statusEl.textContent = 'Approving the marketplace to hold your NFT…';
+        const atx = await nft.setApprovalForAll(MARKETPLACE_CONTRACT, true);
+        await atx.wait();
+      }
+      statusEl.textContent = 'Listing token #' + tokenId + ' for ' + priceStr + ' BNB…';
+      const tx = await mkt.list(BigInt(tokenId), price);
+      await tx.wait();
+      statusEl.textContent = 'Listed! Your NFT is now for sale.';
+      refreshListings();
+      refreshMyNFTs();
+    }catch(e){ statusEl.textContent = 'List failed: ' + (e.reason || e.message || 'transaction failed'); }
+  }
+
+  async function buyListing(listingId, priceWei){
+    if (!mktEnabled) return;
+    try{
+      const w = await getSignerContract();
+      const mkt = new ethers.Contract(MARKETPLACE_CONTRACT, MARKET_ABI, w.signer);
+      const tx = await mkt.buy(listingId, { value: BigInt(priceWei) });
+      await tx.wait();
+      alert('Bought! The NFT is now in your wallet.');
+      refreshListings();
+      refreshMyNFTs();
+    }catch(e){ alert('Buy failed: ' + (e.reason || e.message || 'transaction failed')); }
+  }
+
+  async function cancelListing(listingId){
+    if (!mktEnabled) return;
+    try{
+      const w = await getSignerContract();
+      const mkt = new ethers.Contract(MARKETPLACE_CONTRACT, MARKET_ABI, w.signer);
+      const tx = await mkt.cancel(listingId);
+      await tx.wait();
+      alert('Listing cancelled. Your NFT is back in your wallet.');
+      refreshListings();
+      refreshMyNFTs();
+    }catch(e){ alert('Cancel failed: ' + (e.reason || e.message || 'transaction failed')); }
+  }
+
+  async function refreshMyNFTs(){
+    const el = document.getElementById('myNfts');
+    const statusEl = document.getElementById('myNftsStatus');
+    if (typeof ethers === 'undefined' || !window.ethereum){ el.innerHTML = '<p class="muted">Open this page in a wallet browser (e.g. MetaMask).</p>'; return; }
+    el.innerHTML = '<p class="muted">Scanning your NFTs…</p>';
+    statusEl.textContent = '';
+    try{
+      const w = await getSignerContract();
+      const wallet = w.address.toLowerCase();
+      const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
+      const latest = await provider.getBlockNumber();
+      const owned = new Set();
+      const CHUNK = 5000;
+      for (let from = NFT_DEPLOY_BLOCK; from <= latest; from += CHUNK){
+        const to = Math.min(from + CHUNK - 1, latest);
+        const logs = await provider.getLogs({ address: NFT_CONTRACT, topics: [TRANSFER_TOPIC], fromBlock: from, toBlock: to });
+        for (const log of logs){
+          const fromAddr = '0x' + log.topics[1].slice(26).toLowerCase();
+          const toAddr = '0x' + log.topics[2].slice(26).toLowerCase();
+          const tokenId = Number(BigInt(log.topics[3]));
+          if (toAddr === wallet) owned.add(tokenId);
+          if (fromAddr === wallet) owned.delete(tokenId);
+        }
+      }
+      if (owned.size === 0){ el.innerHTML = '<p class="muted">You own no DeadGrid NFTs yet. Mint one first.</p>'; return; }
+      let html = '';
+      for (const tokenId of owned){
+        const meta = await fetchMeta(provider, tokenId);
+        html += cardHtml(meta, tokenId,
+          '<button class="btn-action btn-blue btn-small" onclick="prefillList(' + tokenId + ')">LIST THIS ONE</button>');
+      }
+      el.innerHTML = '<div class="list-grid">' + html + '</div>';
+      statusEl.textContent = 'You own ' + owned.size + ' DeadGrid NFT' + (owned.size > 1 ? 's' : '') + '.';
+    }catch(e){ el.innerHTML = '<p class="muted">Could not load your NFTs. Try again.</p>'; }
+  }
+
+  function prefillList(tokenId){
+    document.getElementById('listTokenId').value = tokenId;
+    document.getElementById('listPrice').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function refreshMeta(){
+    document.getElementById('nftAddr').textContent = NFT_CONTRACT;
+    if (!mktEnabled){
+      document.getElementById('mktAddr').textContent = '—';
+      document.getElementById('mktFee').textContent = '2.5%';
+      document.getElementById('mktBadge').textContent = 'NOT DEPLOYED YET';
+      return;
+    }
+    document.getElementById('mktAddr').textContent = MARKETPLACE_CONTRACT;
+    document.getElementById('mktBadge').textContent = 'LIVE';
+    try{
+      const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
+      const mkt = new ethers.Contract(MARKETPLACE_CONTRACT, MARKET_ABI, provider);
+      const fee = await mkt.feeBps();
+      document.getElementById('mktFee').textContent = (Number(fee) / 100) + '%';
+    }catch(e){}
+  }
+
+  refreshMeta();
+  refreshListings();
+  setInterval(refreshListings, 60000);
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
