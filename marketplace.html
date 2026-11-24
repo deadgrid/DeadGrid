@@ -236,14 +236,27 @@
 
   async function fetchMeta(provider, tokenId){
     if (metaCache[tokenId]) return metaCache[tokenId];
-    try{
-      const nft = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
-      const uri = await nft.tokenURI(tokenId);
-      const res = await fetch(uri);
-      const meta = await res.json();
-      metaCache[tokenId] = meta;
-      return meta;
-    }catch(e){ return { name: 'DeadGrid #' + tokenId, image: '', attributes: [] }; }
+    for (let attempt = 0; attempt < 3; attempt++){
+      try{
+        const nft = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
+        const uri = await nft.tokenURI(tokenId);
+        const res = await fetch(uri);
+        if (!res.ok) throw new Error('metadata HTTP ' + res.status);
+        const meta = await res.json();
+        // Same-origin image: metadata points at deadgrid.github.io, which
+        // 301-redirects to this site — skip that redirect hop on phones.
+        var GH_PREFIX = 'https://deadgrid.github.io/DeadGrid';
+        if (typeof meta.image === 'string' && meta.image.indexOf(GH_PREFIX) === 0){
+          var base = location.pathname.indexOf('/DeadGrid/') === 0 ? '/DeadGrid' : '';
+          meta.image = location.origin + base + meta.image.slice(GH_PREFIX.length);
+        }
+        metaCache[tokenId] = meta;
+        return meta;
+      }catch(e){
+        if (attempt < 2) await new Promise(function(r){ setTimeout(r, 1000); });
+      }
+    }
+    return { name: 'DeadGrid #' + tokenId, image: '', attributes: [] };
   }
 
   function rarityOf(meta){
@@ -252,7 +265,7 @@
   }
 
   function cardHtml(meta, tokenId, extra){
-    const img = meta.image ? '<img src="' + esc(meta.image) + '" alt="' + esc(meta.name || ('#' + tokenId)) + '">' : '';
+    const img = meta.image ? '<img src="' + esc(meta.image) + '" alt="' + esc(meta.name || ('#' + tokenId)) + '" onerror="this.style.display=\'none\'">' : '';
     return '<div class="list-card">' + img +
       '<div class="name">' + esc(meta.name || ('DeadGrid #' + tokenId)) + '</div>' +
       '<div class="meta">Token #' + tokenId + (rarityOf(meta) ? ' · ' + esc(rarityOf(meta)) : '') + '</div>' +
