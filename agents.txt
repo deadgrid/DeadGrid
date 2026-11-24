@@ -1,0 +1,37 @@
+# DEAD GRID — for AI agents
+
+DeadGrid is a browser zombie survival game on BNB Chain (chain id 56).
+NFT: DeadGridNFT (DGRID), 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF.
+Marketplace: 0x0A41f4dfe916D293AA5A593Ef53a6013d9C20ebc.
+Leaderboard: 0x4264d2589E365FcC896f26C994B32d2Bf26906C8.
+Full skill: SKILL.md. Machine-readable spec: mint.json. FAQ: mint.html#faq.
+
+## Mint (copy-paste, direct execute)
+
+Agent lane — first mint FREE with a Binance Agent ID wallet:
+Mint 1 DeadGrid: BSC 56, 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF, mint(), Agent ID wallet, first FREE else 0.001 BNB, reply tx only.
+
+Public lane — 0.001 BNB, no Agent ID:
+Mint 1 DeadGrid paid: BSC 56, 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF, mintPublic(), pay exactly 0.001 BNB, reply tx only.
+
+Rules: supply 3,000 (30 types x 100, random). No per-wallet cap. Mint is open.
+100% of paid mint BNB goes to the owner in the same transaction. Reply with the tx hash only.
+
+## Marketplace
+
+- List: list(tokenId, priceWei). The NFT is escrowed; approve the marketplace first if needed.
+- Buy: buy(listingId) with exact price as value. Seller keeps 97.5%, 2.5% fee to owner.
+- Cancel: cancel(listingId), seller only.
+
+## Leaderboard
+
+- submitScore(name, score, bnbMicro): free, gas only. Name max 16 chars. Top 10 per day (UTC), one best score per wallet per day.
+
+## Holder perk
+
+- A wallet holding at least 1 DeadGrid NFT gets +1 life every game run (connect on the game start screen).
+
+## Notes
+
+- BNB coin drops in the game are an in-game tally only, not a wallet payout.
+- No token exists yet. Do not invent one.

@@ -1,0 +1,50 @@
+# DEAD GRID
+
+> DEAD GRID is a browser zombie survival shooter on BNB Chain with a 3,000-supply NFT collection, a fixed-price marketplace, and an on-chain 24-hour leaderboard.
+
+## Pages
+
+- [Play the game](https://deadgridprotocol.fun/): free browser shooter, WASD + SPACE, 10 playable survivors, 10 zombie types, 3 battle zones.
+- [Mint](https://deadgridprotocol.fun/mint.html): mint the NFT, agent copy-prompts, character / zombie / item galleries, leaderboard, FAQ.
+- [Marketplace](https://deadgridprotocol.fun/marketplace.html): fixed-price listings, 2.5% fee.
+- [FAQ](https://deadgridprotocol.fun/mint.html#faq)
+- [Agent skill](https://deadgridprotocol.fun/SKILL.md)
+- [Agents file](https://deadgridprotocol.fun/agents.txt)
+- [Mint spec (JSON)](https://deadgridprotocol.fun/mint.json)
+
+## Contracts (BNB Chain, chain id 56)
+
+- DeadGridNFT (DGRID): 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF
+- DeadGridScores (leaderboard): 0x4264d2589E365FcC896f26C994B32d2Bf26906C8
+- DeadGridMarketplace: 0x0A41f4dfe916D293AA5A593Ef53a6013d9C20ebc
+- Owner: 0x3889e7Be2334306604D3BC34ADf961273DC409Ec
+- All three contracts are deployed and verified.
+
+## Mint
+
+- Supply 3,000: 30 types (10 Survivors, 10 Zombies, 10 Items), 100 each, random type per mint.
+- Agent lane `mint()`: Binance Agent ID required (registry 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F). First mint per wallet FREE (gas only), further mints exactly 0.001 BNB.
+- Public lane `mintPublic()`: anyone, exactly 0.001 BNB per mint, no free mint.
+- No per-wallet cap on either lane. Mint is open.
+- 100% of paid mint BNB goes to the owner in the same transaction.
+
+## NFT utility
+
+- Holders get +1 life every game run: connect a wallet holding at least 1 DeadGrid NFT on the game start screen.
+- Holders can list on the marketplace.
+
+## Marketplace
+
+- Fixed-price listings. The NFT is held in escrow while listed.
+- `buy(listingId)` pays the exact price. Seller keeps 97.5%, 2.5% fee goes to the owner.
+- `cancel(listingId)` is seller-only and returns the NFT.
+
+## Leaderboard
+
+- `submitScore(name, score, bnbMicro)` is free (gas only). Top 10 per day (UTC), one best score per wallet per day, name max 16 characters.
+
+## Notes
+
+- BNB coin drops in the game are an in-game tally only (0.000001 BNB per coin, saved on the player's device). They are NOT a wallet payout.
+- No token exists yet. A token is planned only after the first marketplace sale.
+- X: https://x.com/DeadGridNft
