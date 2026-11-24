@@ -23,8 +23,7 @@ interface IAgentId {
 ///     First mint per wallet is FREE (gas only); further mints cost
 ///     0.001 BNB each, exact payment.
 ///   - mintPublic() — OPEN lane: anyone can mint, no Agent ID needed,
-///     but EVERY mint costs 0.001 BNB exact (no free mint), max 10
-///     mints per wallet on this lane.
+///     but EVERY mint costs 0.001 BNB exact (no free mint).
 ///  100% of paid mint BNB goes straight to the owner (project wallet) in
 ///  the same transaction — nothing is kept in this contract. Mint starts
 ///  CLOSED; the owner opens it separately.
@@ -37,8 +36,6 @@ contract DeadGridNFT is ERC721, Ownable, ReentrancyGuard {
     uint256 public constant MAX_SUPPLY = 3000;
     uint256 public constant MAX_PER_TYPE = 100;
     uint256 public constant TYPE_COUNT = 30;
-    /// @notice Max mints per wallet on the OPEN lane (mintPublic).
-    uint256 public constant MAX_PUBLIC_PER_WALLET = 10;
 
     /// @notice Binance Agent ID NFT contract (BNB Chain mainnet).
     IAgentId public immutable agentId;
@@ -59,8 +56,6 @@ contract DeadGridNFT is ERC721, Ownable, ReentrancyGuard {
     mapping(uint8 => uint256) public mintedPerType;
     /// @notice Mints per wallet (first one via the agent lane is free).
     mapping(address => uint256) public mintedByWallet;
-    /// @notice Mints per wallet on the OPEN lane only (capped at 10).
-    mapping(address => uint256) public mintedPublicByWallet;
 
     string[30] public typeSlugs = [
         "survivor-vex", "survivor-nova", "survivor-bulwark", "survivor-ghost", "survivor-medix",
@@ -73,7 +68,6 @@ contract DeadGridNFT is ERC721, Ownable, ReentrancyGuard {
 
     error MintClosed();
     error NoAgentId(address wallet);
-    error PublicMintCapReached(address wallet);
     error SoldOut();
     error WrongPayment(uint256 expected, uint256 got);
     error PaymentFailed();
@@ -137,14 +131,11 @@ contract DeadGridNFT is ERC721, Ownable, ReentrancyGuard {
     }
 
     /// @notice OPEN lane: anyone can mint, no Agent ID needed. Every mint
-    ///  costs 0.001 BNB exact — no free mint on this lane. Max 10 mints
-    ///  per wallet on this lane.
+    ///  costs 0.001 BNB exact — no free mint on this lane.
     function mintPublic() external payable nonReentrant returns (uint256 tokenId) {
         if (!mintOpen) revert MintClosed();
-        if (mintedPublicByWallet[msg.sender] >= MAX_PUBLIC_PER_WALLET) revert PublicMintCapReached(msg.sender);
         if (totalMinted >= MAX_SUPPLY) revert SoldOut();
 
-        mintedPublicByWallet[msg.sender] += 1;
         return _doMint(MINT_PRICE, false);
     }
 
