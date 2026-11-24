@@ -291,7 +291,7 @@
     <div id="charPicked">VEX · SCOUT · SPD 5.2 · DMG 1 · FIRE 110ms · 3 LIVES</div>
     <div id="holderRow">
       <button class="btn-action ghost" id="holderBtn" onclick="checkHolder()">CONNECT WALLET — HOLDER +1 LIFE</button>
-      <p id="holderStatus">Own a DeadGrid NFT? Connect your wallet — holders start every run with +1 life.</p>
+      <p id="holderStatus">Own a DeadGrid NFT? Connect your wallet — holders get +1 life, 2× coins and a gold skin in every run.</p>
     </div>
     <button class="btn-action" onclick="startGame()">Enter the Grid</button>
     <div id="leaderboardPanel">
@@ -301,6 +301,7 @@
     <div id="shopPanel">
       <h3>UPGRADES — SPEND BNB COINS</h3>
       <p class="muted">Coins you collect in-game buy permanent upgrades. <span id="coinBalance">0 coins</span></p>
+      <p class="muted">NFT holders earn 2× coins. <a href="mint.html" style="color:#6dff8a">Mint one — 0.001 BNB</a></p>
       <div id="shopRows"></div>
     </div>
     <div id="missionPanel">
@@ -325,7 +326,7 @@
     <p class="score-line" id="finalScore">Score: 0</p>
     <p class="score-line" id="finalHigh">Best: 0</p>
     <p id="gameOverMintLine" class="score-line" style="font-size:15px; color:#c7d6db;"></p>
-    <a class="btn-action" href="mint.html">MINT THIS SURVIVOR — 0.001 BNB</a>
+    <a class="btn-action" href="mint.html">MINT A RANDOM SURVIVOR — 0.001 BNB</a>
     <div id="leaderboardForm">
       <input id="playerName" maxlength="16" placeholder="Your name (1-16 chars)" autocomplete="off">
       <button class="btn-action" id="saveScoreBtn" onclick="saveScore()">SAVE TO LEADERBOARD</button>
@@ -387,10 +388,11 @@
       score = 0, lives = 3, gameRunning = false, spawnTimer = 0,
       spawnInterval = 65, difficultyTimer = 0, hitFlash = 0, holderBonus = false,
       shake = 0, xp = 0, level = 1, xpNeed = 30, levelUpOpen = false, pendingLevels = 0, levelChoices = [],
-      up = { dmg:0, fireMul:1, speedMul:1, magnet:0, multishot:0, pierce:0, scoreMul:1 },
+      up = { dmg:0, fireMul:1, speedMul:1, magnet:0, multishot:0, pierce:0, scoreMul:1, crit:0, frost:0, shield:0, lifesteal:0 },
       bossActive = false, nextBossAt = 500, kills = 0, combo = 0, comboTimer = 0,
       mouseAim = false, mouseX = 0, mouseY = 0, fireHeld = false, runTime = 0,
-      bossKills = 0, coinsCollected = 0, killsByType = {};
+      bossKills = 0, coinsCollected = 0, killsByType = {},
+      shieldReady = true, shieldTimer = 0;
 
   // ---------- Permanent upgrades (bought with in-game BNB coins) ----------
   // 1 coin = 0.000001 BNB. Coins are an in-game tally only, never a payout.
@@ -465,6 +467,10 @@
     { name:'+1 BULLET',     desc:'Fire an extra bullet.',            apply(){ up.multishot++; } },
     { name:'PIERCING',      desc:'Bullets pass through +1 zombie.', apply(){ up.pierce++; } },
     { name:'+25% SCORE',    desc:'All points worth more.',           apply(){ up.scoreMul *= 1.25; } },
+    { name:'CRIT +15%',     desc:'Bullets have a 15% chance to deal double damage.', apply(){ up.crit += 0.15; } },
+    { name:'FROST AURA',    desc:'Zombies near you move 20% slower.', apply(){ up.frost++; } },
+    { name:'SHIELD',        desc:'Block one hit every 30 seconds.', apply(){ up.shield++; shieldReady = true; shieldTimer = 0; } },
+    { name:'LIFE STEAL',    desc:'Kills have an 8% chance to restore 1 life.', apply(){ up.lifesteal++; } },
   ];
 
   const scoreEl = document.getElementById('score');
@@ -529,7 +535,8 @@
       angle: -Math.PI/2, moving:false, walkCycle:0
     };
     shootCooldown = selectedChar.fire * Math.pow(0.9, perm.fire || 0);
-    up = { dmg:0, fireMul:1, speedMul:1, magnet:0, multishot:0, pierce:0, scoreMul:1 };
+    up = { dmg:0, fireMul:1, speedMul:1, magnet:0, multishot:0, pierce:0, scoreMul:1, crit:0, frost:0, shield:0, lifesteal:0 };
+    shieldReady = true; shieldTimer = 0;
     bullets = [];
     enemyShots = [];
     coins = [];
@@ -773,10 +780,11 @@
       const spread = (k - (n - 1) / 2) * 0.22;
       const ca = Math.cos(spread), sa = Math.sin(spread);
       const ddx = dx * ca - dy * sa, ddy = dx * sa + dy * ca;
+      const crit = Math.random() < (up.crit || 0);
       bullets.push({
         x: mx, y: my,
         dx: ddx*10, dy: ddy*10,
-        size:4, dmg: player.dmg || 1, pierce: up.pierce || 0, hits: null
+        size:4, dmg: crit ? (player.dmg || 1) * 2 : (player.dmg || 1), pierce: up.pierce || 0, hits: null, crit
       });
     }
 
@@ -937,6 +945,21 @@
     }
   }
 
+  // Player takes a hit: a ready shield blocks it, otherwise lose 1 life.
+  function hurtPlayer(){
+    if ((up.shield || 0) > 0 && shieldReady){
+      shieldReady = false;
+      shieldTimer = 1800; // 30 seconds at 60fps
+      floaters.push({ x: player.x, y: player.y - 44, text: 'BLOCKED!', life: 60, maxLife: 60, color: '#7ff0e0' });
+      return;
+    }
+    lives -= 1;
+    hitFlash = 1;
+    shake = 10;
+    SFX.hit();
+    updateHUD();
+  }
+
   function update(){
     if (!gameRunning || levelUpOpen) return;
 
@@ -945,6 +968,13 @@
     runTime += 1/60;
     if (comboTimer > 0){ comboTimer--; if (comboTimer === 0) combo = 0; }
     if (shake > 0){ shake *= 0.88; if (shake < 0.3) shake = 0; }
+    if (!shieldReady && shieldTimer > 0){
+      shieldTimer--;
+      if (shieldTimer === 0){
+        shieldReady = true;
+        floaters.push({ x: player.x, y: player.y - 44, text: 'SHIELD READY', life: 60, maxLife: 60, color: '#7ff0e0' });
+      }
+    }
     bumpMission('survive', Math.floor(runTime));
 
     // player movement
@@ -1000,6 +1030,8 @@
       // Screamer aura: zombies near a Screamer move faster
       let effSpeed = z.speed;
       if (z.type !== 'screamer' && screamers.some(s => s !== z && Math.hypot(s.x-z.x, s.y-z.y) < 220)) effSpeed += 0.6;
+      // Frost aura: zombies near the player move slower
+      if ((up.frost || 0) > 0 && Math.hypot(z.x - player.x, z.y - player.y) < 150) effSpeed *= Math.max(0.4, 1 - 0.2 * up.frost);
       // Wraith phases: speed surges and fades
       if (z.type === 'wraith') effSpeed *= 1 + 0.4*Math.sin(z.wobble*2);
       // Stalker zigzags hard
@@ -1018,11 +1050,8 @@
       // collision with player
       if (len < player.size*0.7+z.size*0.7){
         zombies.splice(i,1);
-        lives -= 1;
-        hitFlash = 1;
-        shake = 10;
-        SFX.hit();
         spawnExplosion(player.x, player.y, '#ff6b6b');
+        hurtPlayer();
         updateHUD();
         if (lives <= 0){
           endGame();
@@ -1044,10 +1073,11 @@
       if (clen < magnetR){ c.x += (cdx/clen)*3; c.y += (cdy/clen)*3; }
       if (clen < player.size*0.8){
         coins.splice(i,1);
-        bnbEarned += c.value;
+        const coinVal = c.value * (holderBonus ? 2 : 1); // holders earn double coins
+        bnbEarned += coinVal;
         coinsCollected++;
         localStorage.setItem('dg_bnb', bnbEarned.toFixed(6));
-        floaters.push({ x: player.x, y: player.y - 30, text: '+0.000001 BNB', life: 60, maxLife: 60 });
+        floaters.push({ x: player.x, y: player.y - 30, text: '+' + coinVal.toFixed(6) + ' BNB', life: 60, maxLife: 60 });
         SFX.coin();
         bumpMission('coins', 1);
         updateHUD();
@@ -1068,11 +1098,8 @@
       if (s.x<-20||s.x>viewW+20||s.y<-20||s.y>viewH+20){ enemyShots.splice(i,1); continue; }
       if (Math.hypot(s.x-player.x, s.y-player.y) < player.size*0.7 + s.size){
         enemyShots.splice(i,1);
-        lives -= 1;
-        hitFlash = 1;
-        shake = 10;
-        SFX.hit();
         spawnExplosion(player.x, player.y, '#b8ff4d');
+        hurtPlayer();
         updateHUD();
         if (lives <= 0){ endGame(); return; }
       }
@@ -1090,7 +1117,7 @@
           spawnBlood(z.x, z.y, hitAngle);
           const dmg = b.dmg || 1;
           z.hp = (z.hp || 1) - dmg;
-          floaters.push({ x: z.x, y: z.y - z.size*0.7, text: '-' + dmg, life: 40, maxLife: 40, color: '#ffffff' });
+          floaters.push({ x: z.x, y: z.y - z.size*0.7, text: (b.crit ? '-' + dmg + ' CRIT' : '-' + dmg), life: 40, maxLife: 40, color: b.crit ? '#ff9d00' : '#ffffff' });
           // piercing bullets keep flying, but never hit the same zombie twice
           if ((b.pierce || 0) > 0){
             b.pierce--;
@@ -1107,12 +1134,8 @@
             spawnExplosion(z.x, z.y, '#ff6b1a');
             shake = Math.max(shake, 8);
             if (Math.hypot(player.x-z.x, player.y-z.y) < 110){
-              lives -= 1;
-              hitFlash = 1;
-              shake = 10;
-              SFX.hit();
               spawnExplosion(player.x, player.y, '#ff6b6b');
-              updateHUD();
+              hurtPlayer();
             }
           }
           // random BNB coin drop from the zombie
@@ -1145,6 +1168,11 @@
           bumpMission('kill:' + z.type, 1);
           bumpMission('score', score);
           gainXp((z.scoreValue || 10) + (z.isBoss ? 50 : 0));
+          // Life steal: kills can restore 1 life
+          if ((up.lifesteal || 0) > 0 && lives < 5 && Math.random() < 0.08 * up.lifesteal){
+            lives++;
+            floaters.push({ x: player.x, y: player.y - 44, text: '+1 ❤', life: 60, maxLife: 60, color: '#ff6b9d' });
+          }
           updateHUD();
           break;
         }
@@ -1361,6 +1389,19 @@
     ctx.fill();
 
     ctx.restore();
+
+    // holders wear a gold ring — the NFT shows in the arena
+    if (holderBonus){
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,215,0,0.95)';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size*1.05, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   function drawZombie(z){
@@ -1973,7 +2014,7 @@
     renderShop();
     renderMissions();
     document.getElementById('gameOverChar').src = selectedChar.img;
-    document.getElementById('gameOverMintLine').textContent = 'You played as ' + selectedChar.name + ' — own this survivor as an NFT.';
+    document.getElementById('gameOverMintLine').textContent = 'You played as ' + selectedChar.name + ' — mint a random survivor NFT (30 types, 0.001 BNB).';
     updateHUD();
     gameOverOverlay.classList.remove('hidden');
     cancelAnimationFrame(rafId);
@@ -2063,7 +2104,7 @@
       if (bal > 0n){
         holderBonus = true;
         btn.textContent = 'HOLDER ✓ +1 LIFE ACTIVE';
-        statusEl.textContent = 'You hold ' + bal + ' DeadGrid NFT' + (bal > 1n ? 's' : '') + ' — +1 life in every run.';
+        statusEl.textContent = 'You hold ' + bal + ' DeadGrid NFT' + (bal > 1n ? 's' : '') + ' — +1 life, 2× coins and a gold skin in every run.';
         charPicked.textContent = charStatsLine(selectedChar);
       } else {
         holderBonus = false;
