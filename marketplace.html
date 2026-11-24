@@ -141,7 +141,7 @@
   <div class="wrap">
     <h1>MARKETPLACE</h1>
     <div class="subtitle">Buy &amp; Sell DeadGrid NFTs</div>
-    <div class="badge" id="mktBadge">NOT DEPLOYED YET</div>
+    <div class="badge" id="mktBadge">DEPLOYED · LIVE</div>
     <p>Fixed-price listings for DeadGrid NFTs. Your NFT goes into escrow when you list it, and comes back if you cancel.</p>
     <p class="muted">Marketplace fee 2.5% of the sale price. No offers, no auctions.</p>
 
@@ -195,7 +195,7 @@
 <script>
   // Set by the deployer: paste the DeadGridMarketplace contract address here
   // after deploying via marketplace-deploy.html.
-  const MARKETPLACE_CONTRACT = '0x0000000000000000000000000000000000000000';
+  const MARKETPLACE_CONTRACT = '0x0A41f4dfe916D293AA5A593Ef53a6013d9C20ebc';
   const NFT_CONTRACT = '0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF';
   // Block the NFT contract was deployed in (found on-chain).
   const NFT_DEPLOY_BLOCK = 135385378;
@@ -397,7 +397,7 @@
     if (!mktEnabled){
       document.getElementById('mktAddr').textContent = '—';
       document.getElementById('mktFee').textContent = '2.5%';
-      document.getElementById('mktBadge').textContent = 'NOT DEPLOYED YET';
+      document.getElementById('mktBadge').textContent = 'DEPLOYED · LIVE';
       return;
     }
     document.getElementById('mktAddr').textContent = MARKETPLACE_CONTRACT;
