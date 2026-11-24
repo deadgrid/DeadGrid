@@ -291,17 +291,18 @@
     <div id="charPicked">VEX · SCOUT · SPD 5.2 · DMG 1 · FIRE 110ms · 3 LIVES</div>
     <div id="holderRow">
       <button class="btn-action ghost" id="holderBtn" onclick="checkHolder()">CONNECT WALLET — HOLDER +1 LIFE</button>
-      <p id="holderStatus">Own a DeadGrid NFT? Connect your wallet — holders get +1 life, 2× coins and a gold skin in every run.</p>
+      <p id="holderStatus">Own a DeadGrid NFT? Connect your wallet — holders get +1 life, 2× coins and a gold skin in every run. Paid minters get +1 extra life and a red ring.</p>
     </div>
     <button class="btn-action" onclick="startGame()">Enter the Grid</button>
     <div id="leaderboardPanel">
       <h3>LEADERBOARD — TODAY (24H)</h3>
       <div id="leaderboardRows"><p class="muted">Loading…</p></div>
+      <p class="muted" id="yourBestLine"></p>
     </div>
     <div id="shopPanel">
       <h3>UPGRADES — SPEND BNB COINS</h3>
       <p class="muted">Coins you collect in-game buy permanent upgrades. <span id="coinBalance">0 coins</span></p>
-      <p class="muted">NFT holders earn 2× coins. <a href="mint.html" style="color:#6dff8a">Mint one — 0.001 BNB</a></p>
+      <p class="muted">NFT holders earn 2× coins. Paid minters get +1 extra life. <a href="mint.html" style="color:#6dff8a">Mint one — 0.001 BNB</a></p>
       <div id="shopRows"></div>
     </div>
     <div id="missionPanel">
@@ -330,6 +331,7 @@
     <div id="leaderboardForm">
       <input id="playerName" maxlength="16" placeholder="Your name (1-16 chars)" autocomplete="off">
       <button class="btn-action" id="saveScoreBtn" onclick="saveScore()">SAVE TO LEADERBOARD</button>
+      <p class="muted">Submit your score — earn 20 coins once a day.</p>
       <p id="saveStatus" class="muted"></p>
     </div>
     <button class="btn-action ghost" onclick="postToX()">POST TO X</button>
@@ -386,7 +388,7 @@
   // ---------- Game state ----------
   let player = null, bullets = [], enemyShots = [], coins = [], floaters = [], zombies = [], particles = [], keys = {},
       score = 0, lives = 3, gameRunning = false, spawnTimer = 0,
-      spawnInterval = 65, difficultyTimer = 0, hitFlash = 0, holderBonus = false,
+      spawnInterval = 65, difficultyTimer = 0, hitFlash = 0, holderBonus = false, paidMinter = false,
       shake = 0, xp = 0, level = 1, xpNeed = 30, levelUpOpen = false, pendingLevels = 0, levelChoices = [],
       up = { dmg:0, fireMul:1, speedMul:1, magnet:0, multishot:0, pierce:0, scoreMul:1, crit:0, frost:0, shield:0, lifesteal:0 },
       bossActive = false, nextBossAt = 500, kills = 0, combo = 0, comboTimer = 0,
@@ -511,7 +513,7 @@
   let selectedChar = CHARACTERS[0];
   const charGrid = document.getElementById('charGrid');
   const charPicked = document.getElementById('charPicked');
-  function charStatsLine(c){ return c.name + ' · ' + c.title.toUpperCase() + ' · SPD ' + c.speed.toFixed(1) + ' · DMG ' + c.dmg + ' · FIRE ' + c.fire + 'ms · ' + c.lives + ' LIVES' + (holderBonus ? ' · +1 HOLDER' : ''); }
+  function charStatsLine(c){ return c.name + ' · ' + c.title.toUpperCase() + ' · SPD ' + c.speed.toFixed(1) + ' · DMG ' + c.dmg + ' · FIRE ' + c.fire + 'ms · ' + c.lives + ' LIVES' + (holderBonus ? ' · +1 HOLDER' : '') + (paidMinter ? ' · +1 PAID' : ''); }
   function renderCharGrid(){
     charGrid.innerHTML = '';
     CHARACTERS.forEach((c, i) => {
@@ -550,7 +552,7 @@
     fireHeld = false; runTime = 0; bossKills = 0; coinsCollected = 0; killsByType = {};
     shake = 0;
     document.getElementById('levelUpOverlay').classList.add('hidden');
-    lives = selectedChar.lives + (perm.lives || 0) + (holderBonus ? 1 : 0);
+    lives = selectedChar.lives + (perm.lives || 0) + (holderBonus ? 1 : 0) + (paidMinter ? 1 : 0);
     gameRunning = true;
     spawnTimer = 0;
     spawnInterval = 65;
@@ -1390,12 +1392,12 @@
 
     ctx.restore();
 
-    // holders wear a gold ring — the NFT shows in the arena
+    // holders wear a gold ring, paid minters a red one — the NFT shows in the arena
     if (holderBonus){
       ctx.save();
-      ctx.strokeStyle = 'rgba(255,215,0,0.95)';
+      if (paidMinter){ ctx.strokeStyle = 'rgba(255,59,78,0.95)'; ctx.shadowColor = '#ff3b4e'; }
+      else { ctx.strokeStyle = 'rgba(255,215,0,0.95)'; ctx.shadowColor = '#ffd700'; }
       ctx.lineWidth = 2.5;
-      ctx.shadowColor = '#ffd700';
       ctx.shadowBlur = 14;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size*1.05, 0, Math.PI*2);
@@ -2012,6 +2014,7 @@
     finalScoreEl.textContent = 'Score: ' + score + '  ·  LVL ' + level + '  ·  ' + kills + ' kills';
     finalHighEl.textContent = 'Best: ' + highScore + '  ·  BNB: ' + bnbEarned.toFixed(6);
     renderShop();
+    updateBestLine();
     renderMissions();
     document.getElementById('gameOverChar').src = selectedChar.img;
     document.getElementById('gameOverMintLine').textContent = 'You played as ' + selectedChar.name + ' — mint a random survivor NFT (30 types, 0.001 BNB).';
@@ -2082,10 +2085,38 @@
     }
   }
 
+  function updateBestLine(){
+    const el = document.getElementById('yourBestLine');
+    if (!el) return;
+    el.textContent = highScore > 0 ? 'YOUR BEST: ' + highScore + ' pts — submit it after your next run to earn 20 coins.' : '';
+  }
+
   // ---------- Holder perk: +1 life for DeadGrid NFT holders ----------
   // DeadGridNFT (deployed): 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF
   const NFT_CONTRACT = '0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF';
   const NFT_ABI = ['function balanceOf(address) view returns (uint256)'];
+  // Paid minters (any Minted event with freeMint=false) get one extra life
+  // and a red ring. Scans newest blocks first so a recent paid mint is found
+  // fast; a failed scan just means "not paid" — it never blocks the holder perk.
+  const MINTED_TOPIC0 = '0xfda26f4c44f21489c4ec2f6d4b828ac16881f399e0e77a4b9ce3ff682484e466';
+  const NFT_DEPLOY_BLOCK = 135385378;
+  async function checkPaidMinter(addr){
+    try{
+      const provider = await readProvider();
+      const latest = await provider.getBlockNumber();
+      const topic1 = '0x000000000000000000000000' + addr.slice(2).toLowerCase();
+      for (let end = latest; end >= NFT_DEPLOY_BLOCK; end -= 5000){
+        const start = Math.max(NFT_DEPLOY_BLOCK, end - 4999);
+        const logs = await provider.getLogs({ address: NFT_CONTRACT, topics: [MINTED_TOPIC0, topic1], fromBlock: start, toBlock: end });
+        for (const log of logs){
+          // Minted data is just freeMint (32B; typeIndex is indexed in topic3).
+          // Paid mints end in 00, free mints in 01 — verified on-chain.
+          if (log.data.slice(-2) === '00') return true;
+        }
+      }
+    }catch(e){}
+    return false;
+  }
   // Only runs when the player taps the button — never auto-prompts on load.
   window.checkHolder = async function(){
     const statusEl = document.getElementById('holderStatus');
@@ -2103,11 +2134,21 @@
       const bal = await c.balanceOf(addr);
       if (bal > 0n){
         holderBonus = true;
+        paidMinter = false;
         btn.textContent = 'HOLDER ✓ +1 LIFE ACTIVE';
         statusEl.textContent = 'You hold ' + bal + ' DeadGrid NFT' + (bal > 1n ? 's' : '') + ' — +1 life, 2× coins and a gold skin in every run.';
         charPicked.textContent = charStatsLine(selectedChar);
+        // paid-mint check runs in the background — a slow scan never blocks the holder perk
+        checkPaidMinter(addr).then(function(paid){
+          if (!paid) return;
+          paidMinter = true;
+          btn.textContent = 'PAID MINTER ✓ +2 LIVES ACTIVE';
+          statusEl.textContent = 'You hold ' + bal + ' DeadGrid NFT' + (bal > 1n ? 's' : '') + ' — PAID MINTER: +2 lives, 2× coins and a red ring in every run.';
+          charPicked.textContent = charStatsLine(selectedChar);
+        });
       } else {
         holderBonus = false;
+        paidMinter = false;
         statusEl.textContent = 'No DeadGrid NFT in this wallet yet — mint one for 0.001 BNB (or FREE first with Agent ID).';
       }
     }catch(e){
@@ -2134,7 +2175,20 @@
       const tx = await c.submitScore(name, score, Math.round(bnbEarned * 1000000));
       statusEl.textContent = 'Waiting for confirmation…';
       await tx.wait();
-      statusEl.textContent = 'Saved! You are on today\'s leaderboard.';
+      // submitting earns 20 coins once a day — a reason to put your score on-chain
+      const today = new Date().toISOString().slice(0, 10);
+      let bonusMsg = '';
+      try{
+        if (localStorage.getItem('dg_submit_bonus') !== today){
+          localStorage.setItem('dg_submit_bonus', today);
+          bnbEarned += 0.000020;
+          localStorage.setItem('dg_bnb', bnbEarned.toFixed(6));
+          bonusMsg = ' +20 coins earned.';
+          renderShop();
+          updateHUD();
+        }
+      }catch(e){}
+      statusEl.textContent = 'Saved! You are on today\'s leaderboard.' + bonusMsg;
       loadLeaderboard();
     }catch(e){
       statusEl.textContent = 'Could not save: ' + (e.reason || e.message || 'transaction failed');
@@ -2155,6 +2209,7 @@
     if (savedName) document.getElementById('playerName').value = savedName;
   } catch(e) {}
   loadLeaderboard();
+  updateBestLine();
   setInterval(loadLeaderboard, 60000);
   loadMissions();
   renderShop();
