@@ -95,6 +95,30 @@ contract DeadGridNFTTest is Test {
         nft.mintPublic{value: 0.001 ether}();
     }
 
+    function testPublicLaneCap10() public {
+        nft.setMintOpen(true);
+        for (uint256 i = 0; i < 10; i++) {
+            vm.prank(stranger);
+            nft.mintPublic{value: 0.001 ether}();
+        }
+        assertEq(nft.mintedPublicByWallet(stranger), 10);
+        vm.prank(stranger);
+        vm.expectRevert(abi.encodeWithSelector(DeadGridNFT.PublicMintCapReached.selector, stranger));
+        nft.mintPublic{value: 0.001 ether}();
+    }
+
+    function testPublicCapIsPerWallet() public {
+        nft.setMintOpen(true);
+        for (uint256 i = 0; i < 10; i++) {
+            vm.prank(stranger);
+            nft.mintPublic{value: 0.001 ether}();
+        }
+        // another wallet can still mint on the public lane
+        vm.prank(bob);
+        uint256 id = nft.mintPublic{value: 0.001 ether}();
+        assertEq(nft.ownerOf(id), bob);
+    }
+
     function testTokenURIUsesTypeSlug() public {
         nft.setMintOpen(true);
         vm.prank(alice);
