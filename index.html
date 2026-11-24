@@ -239,6 +239,27 @@
     border-radius:8px; padding:8px 12px; cursor:pointer;
   }
   #soundBtn:hover { background:rgba(20,35,45,0.9); }
+  /* XP bar under the HUD */
+  #xpWrap { position:fixed; top:54px; left:10px; right:10px; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; z-index:55; overflow:hidden; }
+  #xpBar { height:100%; width:0%; background:linear-gradient(90deg,#6dff8a,#7ff0e0); }
+  /* Shop + missions panels on the start screen */
+  #shopPanel, #missionPanel { margin-top:20px; text-align:left; }
+  #shopPanel h3, #missionPanel h3 { font-family:'Orbitron',monospace; color:#6dff8a; letter-spacing:2px; font-size:14px; margin:0 0 8px; }
+  .shop-row, .mission-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 12px; margin-bottom:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09); border-radius:10px; }
+  .shop-row b, .mission-row b { display:block; font-family:'Orbitron',monospace; font-size:12px; letter-spacing:1px; }
+  .shop-row span, .mission-row span { display:block; font-size:13px; color:#9fb4ac; }
+  .shop-row .pips { color:#6dff8a; letter-spacing:3px; }
+  .btn-action:disabled { opacity:0.45; cursor:default; }
+  .btn-small { padding:8px 14px; font-size:11px; white-space:nowrap; }
+  .mission-bar { height:6px; background:rgba(255,255,255,0.1); border-radius:3px; margin-top:6px; overflow:hidden; }
+  .mission-bar i { display:block; height:100%; background:#6dff8a; }
+  .mission-done { color:#6dff8a; }
+  /* Level-up choices */
+  #levelChoices { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:18px; }
+  .up-choice { width:180px; padding:16px 12px; background:rgba(109,255,138,0.08); border:2px solid rgba(109,255,138,0.6); border-radius:12px; color:#eafff0; font-family:'Rajdhani',sans-serif; cursor:pointer; text-align:center; }
+  .up-choice:hover { background:rgba(109,255,138,0.18); }
+  .up-choice b { display:block; font-family:'Orbitron',monospace; font-size:13px; letter-spacing:1px; margin-bottom:6px; color:#6dff8a; }
+  .up-choice span { font-size:14px; color:#c7d6db; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 </head>
@@ -253,6 +274,7 @@
   <div class="hud-box" id="bnb">BNB: 0.000000</div>
   <div class="hud-box" id="lives">LIVES: ❤❤❤</div>
 </div>
+<div id="xpWrap"><div id="xpBar"></div></div>
 
 <button id="soundBtn" onclick="toggleSound()">SOUND: ON</button>
 <div id="startOverlay">
@@ -276,6 +298,15 @@
       <h3>LEADERBOARD — TODAY (24H)</h3>
       <div id="leaderboardRows"><p class="muted">Loading…</p></div>
     </div>
+    <div id="shopPanel">
+      <h3>UPGRADES — SPEND BNB COINS</h3>
+      <p class="muted">Coins you collect in-game buy permanent upgrades. <span id="coinBalance">0 coins</span></p>
+      <div id="shopRows"></div>
+    </div>
+    <div id="missionPanel">
+      <h3>DAILY MISSIONS</h3>
+      <div id="missionRows"></div>
+    </div>
     <br>
     <a class="btn-action btn-mint" href="mint.html">Mint NFT</a>
     <a class="btn-action ghost" href="marketplace.html">Marketplace</a>
@@ -283,6 +314,7 @@
     <a class="btn-action ghost" href="mint.html#faq">FAQ</a>
     <div><a class="x-link" href="https://x.com/DeadGridNft" target="_blank" rel="noopener">𝕏 Follow @DeadGridNft</a></div>
     <div class="controls-hint">10 survivors &nbsp;·&nbsp; 10 zombies &nbsp;·&nbsp; Outer / Mid / Core</div>
+    <div><button class="btn-action ghost" id="aimBtn" onclick="toggleAim()">AIM: AUTO</button></div>
   </div>
 </div>
 
@@ -301,6 +333,13 @@
     </div>
     <button class="btn-action ghost" onclick="postToX()">POST TO X</button>
     <button class="btn-action" onclick="startGame()">Restart</button>
+</div>
+
+<div id="levelUpOverlay" class="overlay hidden">
+    <h1 class="gameover" style="color:#6dff8a">LEVEL UP!</h1>
+    <div class="title-rule"></div>
+    <p class="score-line" id="levelUpText">Choose an upgrade</p>
+    <div id="levelChoices"></div>
 </div>
 
 <div id="mobileControls">
@@ -346,7 +385,87 @@
   // ---------- Game state ----------
   let player = null, bullets = [], enemyShots = [], coins = [], floaters = [], zombies = [], particles = [], keys = {},
       score = 0, lives = 3, gameRunning = false, spawnTimer = 0,
-      spawnInterval = 65, difficultyTimer = 0, hitFlash = 0, holderBonus = false;
+      spawnInterval = 65, difficultyTimer = 0, hitFlash = 0, holderBonus = false,
+      shake = 0, xp = 0, level = 1, xpNeed = 30, levelUpOpen = false, pendingLevels = 0, levelChoices = [],
+      up = { dmg:0, fireMul:1, speedMul:1, magnet:0, multishot:0, pierce:0, scoreMul:1 },
+      bossActive = false, nextBossAt = 500, kills = 0, combo = 0, comboTimer = 0,
+      mouseAim = false, mouseX = 0, mouseY = 0, fireHeld = false, runTime = 0,
+      bossKills = 0, coinsCollected = 0, killsByType = {};
+
+  // ---------- Permanent upgrades (bought with in-game BNB coins) ----------
+  // 1 coin = 0.000001 BNB. Coins are an in-game tally only, never a payout.
+  let perm = { dmg:0, fire:0, speed:0, magnet:0, lives:0 };
+  try { const s = JSON.parse(localStorage.getItem('dg_upgrades') || '{}'); perm = Object.assign(perm, s); } catch(e){}
+  const PERM_DEFS = [
+    { key:'dmg',    name:'+1 DAMAGE',      desc:'Every bullet hits harder.',          base:100, max:3 },
+    { key:'fire',   name:'-10% FIRE TIME', desc:'Shoot faster, forever.',             base:80,  max:3 },
+    { key:'speed',  name:'+0.5 SPEED',     desc:'Move faster, forever.',              base:60,  max:3 },
+    { key:'magnet', name:'+60 MAGNET',     desc:'Coins fly to you from further.',     base:50,  max:3 },
+    { key:'lives',  name:'+1 START LIFE',  desc:'Begin every run with an extra life.', base:150, max:2 },
+  ];
+  function permCost(d){ return d.base * Math.pow(2, perm[d.key] || 0); }
+  function coinsTotal(){ return Math.floor(bnbEarned * 1000000); }
+
+  // ---------- Daily missions (UTC day, progress saved on this device) ----------
+  const MISSION_DEFS = [
+    { key:'kill30',      track:'kill',        mode:'sum', target:30,  reward:20, name:'Kill 30 zombies' },
+    { key:'killWalkers', track:'kill:walker', mode:'sum', target:20,  reward:15, name:'Kill 20 Walkers' },
+    { key:'score500',    track:'score',       mode:'max', target:500, reward:30, name:'Score 500 in one run' },
+    { key:'coins20',     track:'coins',       mode:'sum', target:20,  reward:20, name:'Collect 20 coins' },
+    { key:'brutes5',     track:'kill:brute',  mode:'sum', target:5,   reward:25, name:'Kill 5 Brutes' },
+    { key:'survive120',  track:'survive',     mode:'max', target:120, reward:25, name:'Survive 120 seconds' },
+    { key:'boss1',       track:'boss',        mode:'sum', target:1,   reward:40, name:'Defeat 1 boss' },
+    { key:'runner15',    track:'kill:runner', mode:'sum', target:15,  reward:20, name:'Kill 15 Runners' },
+  ];
+  let missions = [];
+  function missionDay(){ const d = new Date(); return d.getUTCFullYear() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCDate(); }
+  function loadMissions(){
+    const day = missionDay();
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('dg_missions_' + day) || 'null'); } catch(e){}
+    const seed = new Date().getUTCFullYear()*372 + (new Date().getUTCMonth()+1)*31 + new Date().getUTCDate();
+    const picks = [];
+    for (let i = 0; picks.length < 3 && i < 40; i++){
+      const idx = (seed * 7 + i * 5) % MISSION_DEFS.length;
+      if (!picks.includes(idx)) picks.push(idx);
+    }
+    missions = picks.map(i => Object.assign({}, MISSION_DEFS[i], { progress:0, done:false }));
+    if (saved) missions.forEach((m, i) => { if (saved[i]){ m.progress = saved[i].progress || 0; m.done = !!saved[i].done; } });
+  }
+  function saveMissions(){
+    try { localStorage.setItem('dg_missions_' + missionDay(), JSON.stringify(missions.map(m => ({ progress:m.progress, done:m.done })))); } catch(e){}
+  }
+  function bumpMission(track, n){
+    if (!missions || !missions.length) return;
+    let changed = false;
+    for (const m of missions){
+      if (m.done || m.track !== track) continue;
+      const before = m.progress;
+      m.progress = m.mode === 'max' ? Math.max(m.progress, n) : m.progress + n;
+      if (m.progress === before) continue;
+      changed = true;
+      if (m.progress >= m.target){
+        m.done = true;
+        bnbEarned += m.reward / 1000000;
+        try { localStorage.setItem('dg_bnb', bnbEarned.toFixed(6)); } catch(e){}
+        if (player) floaters.push({ x: player.x, y: player.y - 44, text: 'MISSION DONE +' + m.reward + ' COINS', life: 90, maxLife: 90, color: '#6dff8a' });
+        updateHUD();
+      }
+    }
+    if (changed) { saveMissions(); renderMissions(); }
+  }
+
+  // ---------- Run upgrades (level-up choices, reset every run) ----------
+  const UPGRADE_POOL = [
+    { name:'+1 DAMAGE',     desc:'Bullets hit harder.',              apply(){ up.dmg++; player.dmg++; } },
+    { name:'+15% FIRE RATE', desc:'Shoot faster.',                   apply(){ up.fireMul *= 0.85; shootCooldown *= 0.85; } },
+    { name:'+0.6 SPEED',    desc:'Move faster.',                     apply(){ up.speedMul *= 1.12; player.speed *= 1.12; } },
+    { name:'+1 LIFE',       desc:'Restore 1 life (max 5).',         apply(){ lives = Math.min(lives + 1, 5); updateHUD(); } },
+    { name:'+60 MAGNET',    desc:'Coins fly to you from further.',  apply(){ up.magnet += 60; } },
+    { name:'+1 BULLET',     desc:'Fire an extra bullet.',            apply(){ up.multishot++; } },
+    { name:'PIERCING',      desc:'Bullets pass through +1 zombie.', apply(){ up.pierce++; } },
+    { name:'+25% SCORE',    desc:'All points worth more.',           apply(){ up.scoreMul *= 1.25; } },
+  ];
 
   const scoreEl = document.getElementById('score');
   const livesEl = document.getElementById('lives');
@@ -405,11 +524,12 @@
   function initState(){
     player = {
       x: viewW/2, y: viewH/2,
-      size: 32, speed: selectedChar.speed, color: selectedChar.color,
-      dmg: selectedChar.dmg,
+      size: 32, speed: (selectedChar.speed + (perm.speed || 0) * 0.5), color: selectedChar.color,
+      dmg: selectedChar.dmg + (perm.dmg || 0),
       angle: -Math.PI/2, moving:false, walkCycle:0
     };
-    shootCooldown = selectedChar.fire;
+    shootCooldown = selectedChar.fire * Math.pow(0.9, perm.fire || 0);
+    up = { dmg:0, fireMul:1, speedMul:1, magnet:0, multishot:0, pierce:0, scoreMul:1 };
     bullets = [];
     enemyShots = [];
     coins = [];
@@ -418,21 +538,34 @@
     particles = [];
     keys = {};
     score = 0;
-    lives = selectedChar.lives + (holderBonus ? 1 : 0);
+    xp = 0; level = 1; xpNeed = 30; levelUpOpen = false; pendingLevels = 0; levelChoices = [];
+    bossActive = false; nextBossAt = 500; kills = 0; combo = 0; comboTimer = 0;
+    fireHeld = false; runTime = 0; bossKills = 0; coinsCollected = 0; killsByType = {};
+    shake = 0;
+    document.getElementById('levelUpOverlay').classList.add('hidden');
+    lives = selectedChar.lives + (perm.lives || 0) + (holderBonus ? 1 : 0);
     gameRunning = true;
     spawnTimer = 0;
     spawnInterval = 65;
     difficultyTimer = 0;
     hitFlash = 0;
     updateHUD();
+    renderShop();
+    renderMissions();
   }
 
   function updateHUD(){
-    scoreEl.textContent = 'SCORE: ' + score;
+    scoreEl.textContent = 'SCORE: ' + score + ' · LVL ' + level;
     highscoreEl.textContent = 'BEST: ' + highScore;
     if (bnbEl) bnbEl.textContent = 'BNB: ' + bnbEarned.toFixed(6);
     livesEl.textContent = 'LIVES: ' + '❤'.repeat(Math.max(lives,0)) + '♡'.repeat(Math.max(3-lives,0));
     if (zoneEl && player) zoneEl.textContent = 'ZONE: ' + getZone(player.x, player.y);
+    updateXPBar();
+  }
+
+  function updateXPBar(){
+    const bar = document.getElementById('xpBar');
+    if (bar) bar.style.width = Math.min(100, (xp / xpNeed) * 100) + '%';
   }
 
   // ---------- Input ----------
@@ -440,12 +573,19 @@
     keys[e.key.toLowerCase()] = true;
     if (e.code === 'Space'){
       e.preventDefault();
-      shoot();
+      if (!fireHeld) shoot(); // fire once now, then keep firing while held
+      fireHeld = true;
     }
+    if (e.code === 'KeyM' && !(e.target && e.target.tagName === 'INPUT')) toggleAim();
   });
   window.addEventListener('keyup', (e)=>{
     keys[e.key.toLowerCase()] = false;
+    if (e.code === 'Space') fireHeld = false;
   });
+  // mouse aim: track the pointer, hold mouse to fire
+  window.addEventListener('mousemove', (e)=>{ mouseX = e.clientX; mouseY = e.clientY; });
+  canvas.addEventListener('mousedown', (e)=>{ mouseX = e.clientX; mouseY = e.clientY; if (!fireHeld) shoot(); fireHeld = true; });
+  window.addEventListener('mouseup', ()=>{ fireHeld = false; });
 
   // mobile joystick
   let joyActive = false, joyDX = 0, joyDY = 0;
@@ -486,7 +626,11 @@
   let shootCooldown = 140; // ms, set from the selected character's fire rate
 
   const shootBtn = document.getElementById('shootBtn');
-  shootBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); shoot(); }, {passive:false});
+  shootBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); if (!fireHeld) shoot(); fireHeld = true; }, {passive:false});
+  shootBtn.addEventListener('touchend', ()=>{ fireHeld = false; });
+  shootBtn.addEventListener('touchcancel', ()=>{ fireHeld = false; });
+  shootBtn.addEventListener('mousedown', (e)=>{ e.preventDefault(); if (!fireHeld) shoot(); fireHeld = true; });
+  shootBtn.addEventListener('mouseup', ()=>{ fireHeld = false; });
 
 
   // ---------- Retro sound (WebAudio, no audio files) ----------
@@ -598,28 +742,43 @@
   }
 
   function shoot(){
-    if (!gameRunning) return;
+    if (!gameRunning || levelUpOpen) return;
     const now = performance.now();
     if (now - lastShotTime < shootCooldown) return;
     lastShotTime = now;
-    // shoot toward nearest zombie, or current facing angle if none
-    const target = getNearestZombie();
-    let dx = Math.cos(player.angle), dy = Math.sin(player.angle);
-    if (target){
-      const len = Math.hypot(target.x-player.x, target.y-player.y) || 1;
-      dx = (target.x-player.x)/len;
-      dy = (target.y-player.y)/len;
-      player.angle = Math.atan2(dy,dx);
+    // aim: mouse position when mouse-aim is on, else nearest zombie, else facing
+    let dx, dy;
+    if (mouseAim){
+      const len = Math.hypot(mouseX - player.x, mouseY - player.y) || 1;
+      dx = (mouseX - player.x) / len;
+      dy = (mouseY - player.y) / len;
+      player.angle = Math.atan2(dy, dx);
+    } else {
+      const target = getNearestZombie();
+      dx = Math.cos(player.angle); dy = Math.sin(player.angle);
+      if (target){
+        const len = Math.hypot(target.x-player.x, target.y-player.y) || 1;
+        dx = (target.x-player.x)/len;
+        dy = (target.y-player.y)/len;
+        player.angle = Math.atan2(dy,dx);
+      }
     }
     const muzzleDist = player.size*0.95;
     const mx = player.x + dx*muzzleDist;
     const my = player.y + dy*muzzleDist;
 
-    bullets.push({
-      x: mx, y: my,
-      dx: dx*10, dy: dy*10,
-      size:4, dmg: player.dmg || 1
-    });
+    // multishot: extra bullets fan out from the centre shot
+    const n = 1 + (up.multishot || 0);
+    for (let k = 0; k < n; k++){
+      const spread = (k - (n - 1) / 2) * 0.22;
+      const ca = Math.cos(spread), sa = Math.sin(spread);
+      const ddx = dx * ca - dy * sa, ddy = dx * sa + dy * ca;
+      bullets.push({
+        x: mx, y: my,
+        dx: ddx*10, dy: ddy*10,
+        size:4, dmg: player.dmg || 1, pierce: up.pierce || 0, hits: null
+      });
+    }
 
     spawnMuzzleFlash(mx, my, player.angle);
     SFX.shoot();
@@ -779,7 +938,14 @@
   }
 
   function update(){
-    if (!gameRunning) return;
+    if (!gameRunning || levelUpOpen) return;
+
+    // hold to fire (Space / mouse / FIRE button)
+    if (fireHeld) shoot();
+    runTime += 1/60;
+    if (comboTimer > 0){ comboTimer--; if (comboTimer === 0) combo = 0; }
+    if (shake > 0){ shake *= 0.88; if (shake < 0.3) shake = 0; }
+    bumpMission('survive', Math.floor(runTime));
 
     // player movement
     let mx=0, my=0;
@@ -802,9 +968,12 @@
     player.y = Math.max(player.size, Math.min(viewH-player.size, player.y));
     if (zoneEl) zoneEl.textContent = 'ZONE: ' + getZone(player.x, player.y);
 
-    // player always faces the nearest zombie; if none, face movement direction
+    // player faces the mouse when mouse-aim is on, else the nearest zombie, else movement
+    if (mouseAim){
+      player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+    }
     const nearest = getNearestZombie();
-    if (nearest){
+    if (!mouseAim && nearest){
       player.angle = Math.atan2(nearest.y-player.y, nearest.x-player.x);
     } else if (mlen > 0){
       player.angle = Math.atan2(my, mx);
@@ -851,6 +1020,7 @@
         zombies.splice(i,1);
         lives -= 1;
         hitFlash = 1;
+        shake = 10;
         SFX.hit();
         spawnExplosion(player.x, player.y, '#ff6b6b');
         updateHUD();
@@ -870,13 +1040,16 @@
       if (c.life <= 0){ coins.splice(i,1); continue; }
       const cdx = player.x - c.x, cdy = player.y - c.y;
       const clen = Math.hypot(cdx,cdy) || 1;
-      if (clen < 110){ c.x += (cdx/clen)*3; c.y += (cdy/clen)*3; }
+      const magnetR = 110 + (perm.magnet || 0) * 60 + (up.magnet || 0);
+      if (clen < magnetR){ c.x += (cdx/clen)*3; c.y += (cdy/clen)*3; }
       if (clen < player.size*0.8){
         coins.splice(i,1);
         bnbEarned += c.value;
+        coinsCollected++;
         localStorage.setItem('dg_bnb', bnbEarned.toFixed(6));
         floaters.push({ x: player.x, y: player.y - 30, text: '+0.000001 BNB', life: 60, maxLife: 60 });
         SFX.coin();
+        bumpMission('coins', 1);
         updateHUD();
       }
     }
@@ -897,6 +1070,7 @@
         enemyShots.splice(i,1);
         lives -= 1;
         hitFlash = 1;
+        shake = 10;
         SFX.hit();
         spawnExplosion(player.x, player.y, '#b8ff4d');
         updateHUD();
@@ -909,21 +1083,33 @@
       const b = bullets[i];
       for (let j=zombies.length-1;j>=0;j--){
         const z = zombies[j];
+        if (b.hits && b.hits.has(z)) continue;
         const d = Math.hypot(b.x-z.x, b.y-z.y);
         if (d < z.size*0.7+b.size){
           const hitAngle = Math.atan2(b.dy, b.dx);
           spawnBlood(z.x, z.y, hitAngle);
-          bullets.splice(i,1);
-          z.hp = (z.hp || 1) - (b.dmg || 1);
+          const dmg = b.dmg || 1;
+          z.hp = (z.hp || 1) - dmg;
+          floaters.push({ x: z.x, y: z.y - z.size*0.7, text: '-' + dmg, life: 40, maxLife: 40, color: '#ffffff' });
+          // piercing bullets keep flying, but never hit the same zombie twice
+          if ((b.pierce || 0) > 0){
+            b.pierce--;
+            if (!b.hits) b.hits = new Set();
+            b.hits.add(z);
+          } else {
+            bullets.splice(i,1);
+          }
           if (z.hp > 0) break; // Brute takes 3 hits (2 with a 2-damage character)
           spawnZombieDeath(z.x, z.y);
           SFX.die();
           // Boomer: explodes when killed — hurts the player if close
           if (z.type === 'boomer'){
             spawnExplosion(z.x, z.y, '#ff6b1a');
+            shake = Math.max(shake, 8);
             if (Math.hypot(player.x-z.x, player.y-z.y) < 110){
               lives -= 1;
               hitFlash = 1;
+              shake = 10;
               SFX.hit();
               spawnExplosion(player.x, player.y, '#ff6b6b');
               updateHUD();
@@ -933,10 +1119,32 @@
           if (Math.random() < 0.3){
             coins.push({ x: z.x, y: z.y, value: 0.000001, life: 600, bob: Math.random()*Math.PI*2 });
           }
+          // boss drops a shower of coins
+          if (z.isBoss){
+            bossActive = false;
+            bossKills++;
+            shake = 14;
+            for (let k = 0; k < 5; k++){
+              coins.push({ x: z.x + (Math.random()-0.5)*60, y: z.y + (Math.random()-0.5)*60, value: 0.000001, life: 600, bob: Math.random()*Math.PI*2 });
+            }
+            floaters.push({ x: z.x, y: z.y - 40, text: 'BOSS DOWN!', life: 90, maxLife: 90, color: '#ff3b4e' });
+            bumpMission('boss', 1);
+          }
           zombies.splice(j,1);
           if (lives <= 0){ endGame(); break; }
-          score += (z.scoreValue || 10);
+          // combo + score: each kill inside a 2.5s streak adds +1, up to +10
+          combo++;
+          comboTimer = 150;
+          const gain = Math.round(((z.scoreValue || 10) + Math.min(combo, 10)) * (up.scoreMul || 1));
+          score += gain;
           if (score > highScore){ highScore = score; }
+          kills++;
+          killsByType[z.type] = (killsByType[z.type] || 0) + 1;
+          floaters.push({ x: z.x, y: z.y - 26, text: '+' + gain + (combo >= 3 ? '  x' + combo + ' COMBO' : ''), life: 50, maxLife: 50, color: '#6dff8a' });
+          bumpMission('kill', 1);
+          bumpMission('kill:' + z.type, 1);
+          bumpMission('score', score);
+          gainXp((z.scoreValue || 10) + (z.isBoss ? 50 : 0));
           updateHUD();
           break;
         }
@@ -969,6 +1177,10 @@
       spawnTimer = 0;
       spawnZombie();
       if (score >= 200 && Math.random() < 0.3) spawnZombie();
+    }
+    // boss every 500 score
+    if (score >= nextBossAt && !bossActive && gameRunning){
+      spawnBoss();
     }
     difficultyTimer++;
     if (difficultyTimer % 240 === 0 && spawnInterval > 18){
@@ -1502,6 +1714,10 @@
     ctx.clearRect(0,0,viewW,viewH);
     drawGrid();
 
+    // screen shake: entities shake, background stays put
+    ctx.save();
+    if (shake > 0) ctx.translate((Math.random()*2-1)*shake, (Math.random()*2-1)*shake);
+
     // shell casings & gibs below the characters (ground layer)
     for (const p of particles){
       if (p.kind === 'shell' || p.kind === 'gib' || p.kind === 'blood') drawParticle(p);
@@ -1572,7 +1788,7 @@
     for (const f of floaters){
       ctx.save();
       ctx.globalAlpha = Math.max(f.life / f.maxLife, 0);
-      ctx.fillStyle = '#f0b90b';
+      ctx.fillStyle = f.color || '#f0b90b';
       ctx.font = '700 13px Orbitron, monospace';
       ctx.textAlign = 'center';
       ctx.fillText(f.text, f.x, f.y);
@@ -1595,6 +1811,7 @@
     for (const p of particles){
       if (p.kind === 'muzzle' || p.kind === 'spark' || p.kind === 'explosion') drawParticle(p);
     }
+    ctx.restore();
 
     // cinematic vignette — applied last so it reads as a camera/lens effect over everything
     drawVignette();
@@ -1606,6 +1823,128 @@
       ctx.restore();
     }
   }
+
+  // ---------- Boss (every 500 score) ----------
+  function spawnBoss(){
+    bossActive = true;
+    const hp = 40 + Math.floor(score / 50);
+    zombies.push({
+      x: viewW/2, y: -70, size: 64, speed: 0.7, color: '#8a9a7b', type: 'juggernaut',
+      hp, maxHp: hp, scoreValue: 200,
+      wobble: 0, bodySeed: Math.random()*10, limbPhase: 0, angle: 0, spitTimer: 0,
+      isBoss: true
+    });
+    floaters.push({ x: viewW/2, y: 90, text: '⚠ BOSS INCOMING', life: 120, maxLife: 120, color: '#ff3b4e' });
+    nextBossAt += 500;
+  }
+
+  // ---------- XP + level-up ----------
+  function gainXp(n){
+    xp += n;
+    let ups = 0;
+    while (xp >= xpNeed){ xp -= xpNeed; level++; xpNeed = Math.round(xpNeed * 1.35); ups++; }
+    if (ups > 0){ pendingLevels += ups; openLevelUp(); }
+    updateXPBar();
+  }
+  function pickUpgrades(){
+    const pool = UPGRADE_POOL.slice();
+    const out = [];
+    for (let i = 0; i < 3 && pool.length; i++){
+      out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    }
+    return out;
+  }
+  function openLevelUp(){
+    if (levelUpOpen) return;
+    levelUpOpen = true;
+    levelChoices = pickUpgrades();
+    document.getElementById('levelUpText').textContent = 'LEVEL ' + level + ' — choose an upgrade';
+    const box = document.getElementById('levelChoices');
+    box.innerHTML = '';
+    levelChoices.forEach((u, i) => {
+      const b = document.createElement('button');
+      b.className = 'up-choice';
+      b.innerHTML = '<b>' + u.name + '</b><span>' + u.desc + '</span>';
+      b.onclick = () => pickUpgrade(i);
+      box.appendChild(b);
+    });
+    document.getElementById('levelUpOverlay').classList.remove('hidden');
+    SFX.coin();
+  }
+  window.pickUpgrade = function(i){
+    const u = levelChoices[i];
+    if (!u) return;
+    u.apply();
+    document.getElementById('levelUpOverlay').classList.add('hidden');
+    levelUpOpen = false;
+    pendingLevels--;
+    updateXPBar();
+    if (pendingLevels > 0) openLevelUp();
+  };
+
+  // ---------- Permanent upgrade shop ----------
+  function renderShop(){
+    const rows = document.getElementById('shopRows');
+    const bal = document.getElementById('coinBalance');
+    if (!rows) return;
+    if (bal) bal.textContent = coinsTotal() + ' coins';
+    rows.innerHTML = '';
+    PERM_DEFS.forEach(d => {
+      const lvl = perm[d.key] || 0;
+      const cost = permCost(d);
+      const maxed = lvl >= d.max;
+      const afford = coinsTotal() >= cost;
+      const row = document.createElement('div');
+      row.className = 'shop-row';
+      row.innerHTML = '<div><b>' + d.name + '</b><span>' + d.desc + '</span><span class="pips">' + '●'.repeat(lvl) + '○'.repeat(d.max - lvl) + '</span></div>';
+      const btn = document.createElement('button');
+      btn.className = 'btn-action btn-small' + (maxed || !afford ? ' ghost' : '');
+      btn.textContent = maxed ? 'MAX' : cost + ' COINS';
+      btn.disabled = maxed || !afford;
+      btn.onclick = () => buyUpgrade(d.key);
+      row.appendChild(btn);
+      rows.appendChild(row);
+    });
+  }
+  window.buyUpgrade = function(key){
+    const d = PERM_DEFS.find(x => x.key === key);
+    if (!d) return;
+    const cost = permCost(d);
+    if ((perm[key] || 0) >= d.max) return;
+    if (coinsTotal() < cost) return;
+    bnbEarned = Math.max(0, bnbEarned - cost / 1000000);
+    try { localStorage.setItem('dg_bnb', bnbEarned.toFixed(6)); } catch(e){}
+    perm[key] = (perm[key] || 0) + 1;
+    try { localStorage.setItem('dg_upgrades', JSON.stringify(perm)); } catch(e){}
+    SFX.coin();
+    renderShop();
+    updateHUD();
+  };
+
+  // ---------- Daily missions ----------
+  function renderMissions(){
+    const rows = document.getElementById('missionRows');
+    if (!rows || !missions) return;
+    rows.innerHTML = '';
+    missions.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'mission-row';
+      const pct = Math.min(100, (m.progress / m.target) * 100);
+      row.innerHTML = '<div style="flex:1"><b>' + m.name + '</b>' +
+        '<div class="mission-bar"><i style="width:' + pct + '%"></i></div>' +
+        '<span>' + Math.min(m.progress, m.target) + ' / ' + m.target + ' · reward ' + m.reward + ' coins</span></div>' +
+        '<b class="' + (m.done ? 'mission-done' : '') + '">' + (m.done ? 'DONE ✓' : '') + '</b>';
+      rows.appendChild(row);
+    });
+  }
+
+  // ---------- Aim mode ----------
+  window.toggleAim = function(){
+    mouseAim = !mouseAim;
+    try { localStorage.setItem('dg_aim', mouseAim ? 'mouse' : 'auto'); } catch(e){}
+    const b = document.getElementById('aimBtn');
+    if (b) b.textContent = 'AIM: ' + (mouseAim ? 'MOUSE' : 'AUTO');
+  };
 
   let rafId;
   let isPaused = false;
@@ -1624,10 +1963,15 @@
 
   function endGame(){
     gameRunning = false;
+    fireHeld = false;
     SFX.over();
     saveHighScore();
-    finalScoreEl.textContent = 'Score: ' + score;
+    bumpMission('survive', Math.floor(runTime));
+    bumpMission('score', score);
+    finalScoreEl.textContent = 'Score: ' + score + '  ·  LVL ' + level + '  ·  ' + kills + ' kills';
     finalHighEl.textContent = 'Best: ' + highScore + '  ·  BNB: ' + bnbEarned.toFixed(6);
+    renderShop();
+    renderMissions();
     document.getElementById('gameOverChar').src = selectedChar.img;
     document.getElementById('gameOverMintLine').textContent = 'You played as ' + selectedChar.name + ' — own this survivor as an NFT.';
     updateHUD();
@@ -1771,6 +2115,12 @@
   } catch(e) {}
   loadLeaderboard();
   setInterval(loadLeaderboard, 60000);
+  loadMissions();
+  renderShop();
+  renderMissions();
+  try { mouseAim = localStorage.getItem('dg_aim') === 'mouse'; } catch(e){}
+  const aimBtn0 = document.getElementById('aimBtn');
+  if (aimBtn0) aimBtn0.textContent = 'AIM: ' + (mouseAim ? 'MOUSE' : 'AUTO');
 
   updateHUD();
 })();
