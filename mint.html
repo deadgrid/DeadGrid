@@ -140,7 +140,7 @@
   <div class="wrap">
     <h1>MINT</h1>
     <div class="subtitle">Human vs Zombie Survival</div>
-    <div class="badge">DEPLOYED · MINT OPEN</div>
+    <div class="badge" id="mintBadge">DEPLOYED · MINT OPEN</div>
     <p>Survive the grid. Own your survivor.</p>
     <p class="muted">The survivor you play in the game — the one who moves with WASD, shoots with SPACE, and holds 3 lives against the zombies — is what this mint is about.</p>
 
@@ -159,7 +159,7 @@
 
     <div class="card">
       <h2>MINT NOW</h2>
-      <p><b>With Agent ID:</b> first mint per wallet FREE (gas only), further mints 0.001 BNB each.<br><b>Without Agent ID:</b> anyone can mint — every mint 0.001 BNB.</p>
+      <p><b>With Agent ID:</b> first mint per wallet FREE (gas only), further mints 0.001 BNB each.<br><b>Without Agent ID:</b> anyone can mint — every mint 0.001 BNB. No Agent ID needed for this lane.</p>
       <div class="btn-row">
         <button class="btn-action" id="mintBtn" onclick="mintNFT('agent')">MINT WITH AGENT ID — FREE FIRST</button>
         <button class="btn-action btn-blue" id="mintPublicBtn" onclick="mintNFT('public')">MINT WITHOUT AGENT ID — 0.001 BNB</button>
@@ -227,7 +227,7 @@
     <div class="card">
       <h2>LEADERBOARD — 24H ON-CHAIN</h2>
       <p>When you die, enter your name and save your score to the <b>daily on-chain leaderboard</b> — top 10 per UTC day, one best score per wallet per day. Submitting is <b>free</b> (gas only). You can also <b>post your score to X</b> straight from the game-over screen.</p>
-      <p class="muted" style="margin-top:8px;">Leaderboard contract: deploying soon — the board opens once it is live on BNB Chain.</p>
+      <p class="muted" style="margin-top:8px;">Leaderboard is LIVE on BNB Chain: <b style="color:#7fd3ff">0x4264d2589E365FcC896f26C994B32d2Bf26906C8</b> — the board on the game's start screen shows today's top 10.</p>
     </div>
     <div class="card">
       <h2>BNB DROPS</h2>
@@ -273,8 +273,7 @@
     <div style="text-align:center;"><a class="x-link" href="https://x.com/DeadGridNft" target="_blank" rel="noopener">𝕏 Follow @DeadGridNft</a></div>
   </div>
 <script>
-  // Set by the deployer: paste the DeadGridNFT contract address here
-  // after deploying via nft-deploy.html.
+  // DeadGridNFT (deployed): 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF
   const NFT_CONTRACT = '0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF';
   const NFT_ABI = [
     'function mint() payable returns (uint256)',
@@ -290,18 +289,21 @@
   async function refreshMinted(){
     const el = document.getElementById('nftMinted');
     const addrEl = document.getElementById('nftAddr');
+    const badgeEl = document.getElementById('mintBadge');
     if (!nftEnabled || typeof ethers === 'undefined'){ el.textContent = '—'; addrEl.textContent = '—'; return; }
     addrEl.textContent = NFT_CONTRACT;
-    let minted = null;
+    let minted = null, open = null;
     for (const url of READ_RPCS){
       try{
         const provider = new ethers.JsonRpcProvider(url);
         const c = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
         minted = await c.totalMinted();
+        open = await c.mintOpen();
         break;
       }catch(e){}
     }
     el.textContent = minted === null ? '—' : minted + ' / 3000';
+    if (badgeEl && open !== null) badgeEl.textContent = open ? 'DEPLOYED · MINT OPEN' : 'DEPLOYED · MINT CLOSED';
   }
 
   async function mintNFT(lane){

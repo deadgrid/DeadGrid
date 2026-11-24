@@ -165,7 +165,7 @@
       <div class="btn-row">
         <button class="btn-action" id="listBtn" onclick="listNFT()">LIST FOR SALE</button>
       </div>
-      <p id="listStatus" class="muted" style="margin-top:12px;">Marketplace not deployed yet.</p>
+      <p id="listStatus" class="muted" style="margin-top:12px;">Loading…</p>
     </div>
 
     <div class="card">
@@ -173,7 +173,7 @@
       <div class="btn-row" style="justify-content:flex-start;">
         <button class="btn-action btn-blue btn-small" id="refreshBtn" onclick="refreshListings()">REFRESH</button>
       </div>
-      <div id="listings"><p class="muted">Marketplace not deployed yet.</p></div>
+      <div id="listings"><p class="muted">Loading listings…</p></div>
     </div>
 
     <div class="card">
@@ -410,7 +410,7 @@
     if (!mktEnabled){
       document.getElementById('mktAddr').textContent = '—';
       document.getElementById('mktFee').textContent = '2.5%';
-      document.getElementById('mktBadge').textContent = 'DEPLOYED · LIVE';
+      document.getElementById('mktBadge').textContent = 'NOT DEPLOYED';
       return;
     }
     document.getElementById('mktAddr').textContent = MARKETPLACE_CONTRACT;
