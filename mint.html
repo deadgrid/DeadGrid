@@ -103,6 +103,10 @@
   .x-link { display:inline-block; margin-top:18px; font-family:'Orbitron',monospace; font-size:13px; letter-spacing:2px; color:#7fd3ff; text-decoration:none; border:1px solid rgba(127,211,255,0.4); border-radius:8px; padding:9px 16px; }
   .x-link:hover { background:rgba(127,211,255,0.12); }
   .btn-row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+  .prompt-box { background:#0a0f14; border:1px solid rgba(127,211,255,0.35); border-radius:8px; padding:12px 14px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:14px; line-height:1.55; color:#d7f5e3; word-break:break-word; text-align:left; margin:12px 0 8px; white-space:pre-wrap; }
+  .prompt-label { font-family:'Orbitron',monospace; font-weight:700; font-size:12px; letter-spacing:2px; color:#7fd3ff; margin-top:14px; }
+  .copy-btn { display:inline-block; padding:8px 20px; font-size:14px; font-family:'Rajdhani','Segoe UI',system-ui,sans-serif; letter-spacing:2px; background:linear-gradient(145deg, #12202b, #0a1218); color:#7fd3ff; border:1px solid #2196f3; border-radius:8px; cursor:pointer; box-shadow:0 0 12px rgba(80,180,255,0.3); }
+  .copy-btn:hover { box-shadow:0 0 20px rgba(80,180,255,0.6); }
   .chars-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-top:6px; }
   .chars-grid figure { margin:0; text-align:center; }
   .chars-grid img { width:100%; aspect-ratio:1; object-fit:cover; object-position:top; border-radius:8px; border:1px solid rgba(127,211,255,0.3); display:block; }
@@ -165,6 +169,17 @@
         <button class="btn-action btn-blue" id="mintPublicBtn" onclick="mintNFT('public')">MINT WITHOUT AGENT ID — 0.001 BNB</button>
       </div>
       <p id="mintStatus" class="muted" style="margin-top:12px;">Contract deployed — mint is OPEN. Mint with Agent ID (first FREE) or without Agent ID (0.001 BNB).</p>
+    </div>
+
+    <div class="card">
+      <h2>FOR AGENTS — COPY &amp; MINT</h2>
+      <p>Paste one of these into your AI agent — it mints directly, no website needed. Reply with the tx hash only.</p>
+      <div class="prompt-label">AGENT — FIRST MINT FREE</div>
+      <div class="prompt-box" id="promptAgent">Mint 1 DeadGrid: BSC 56, 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF, mint(), Agent ID wallet, first FREE else 0.001 BNB, reply tx only.</div>
+      <button class="copy-btn" onclick="copyPrompt('promptAgent', this)">COPY AGENT PROMPT</button>
+      <div class="prompt-label">PUBLIC — 0.001 BNB, NO AGENT ID</div>
+      <div class="prompt-box" id="promptPublic">Mint 1 DeadGrid paid: BSC 56, 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF, mintPublic(), pay exactly 0.001 BNB, reply tx only.</div>
+      <button class="copy-btn" onclick="copyPrompt('promptPublic', this)">COPY PUBLIC PROMPT</button>
     </div>
 
     <div class="card" id="trailer">
@@ -342,6 +357,22 @@
       statusEl.textContent = 'Mint failed: ' + (e.reason || e.message || 'transaction failed');
     }
   }
+  async function copyPrompt(id, btn){
+    const text = document.getElementById(id).textContent.trim();
+    try{
+      await navigator.clipboard.writeText(text);
+    }catch(e){
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); }catch(_){}
+      document.body.removeChild(ta);
+    }
+    const old = btn.textContent;
+    btn.textContent = 'COPIED ✓';
+    setTimeout(function(){ btn.textContent = old; }, 2000);
+  }
+
   refreshMinted();
   setInterval(refreshMinted, 60000);
 </script>
