@@ -145,6 +145,9 @@
   #saveStatus { min-height:18px; margin:6px 0 2px; }
   .btn-action.ghost { background:transparent; border:1px solid #6fd3ff; color:#6fd3ff; box-shadow:none; }
   #gameOverOverlay .btn-action { display:block; margin:8px auto; }
+  #gameOverOverlay a.btn-action { text-decoration:none; }
+  #holderRow { margin-top:14px; }
+  #holderStatus { min-height:18px; margin:8px 0 2px; font-size:15px; color:var(--muted); }
   #startOverlay .btn-mint:hover { background:rgba(109,255,138,0.1); box-shadow:0 0 24px rgba(109,255,138,0.25); }
   .controls-hint { margin-top:22px; font-size:14px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
   .controls-hint b { color:var(--text); }
@@ -264,6 +267,10 @@
     <div class="char-label">Choose your character — 10 survivors</div>
     <div id="charGrid"></div>
     <div id="charPicked">VEX · SCOUT · SPD 5.2 · DMG 1 · FIRE 110ms · 3 LIVES</div>
+    <div id="holderRow">
+      <button class="btn-action ghost" id="holderBtn" onclick="checkHolder()">CONNECT WALLET — HOLDER +1 LIFE</button>
+      <p id="holderStatus">Own a DeadGrid NFT? Connect your wallet — holders start every run with +1 life.</p>
+    </div>
     <button class="btn-action" onclick="startGame()">Enter the Grid</button>
     <div id="leaderboardPanel">
       <h3>LEADERBOARD — TODAY (24H)</h3>
@@ -284,6 +291,8 @@
     <div class="title-rule"></div>
     <p class="score-line" id="finalScore">Score: 0</p>
     <p class="score-line" id="finalHigh">Best: 0</p>
+    <p id="gameOverMintLine" class="score-line" style="font-size:15px; color:#c7d6db;"></p>
+    <a class="btn-action" href="mint.html">MINT THIS SURVIVOR — 0.001 BNB</a>
     <div id="leaderboardForm">
       <input id="playerName" maxlength="16" placeholder="Your name (1-16 chars)" autocomplete="off">
       <button class="btn-action" id="saveScoreBtn" onclick="saveScore()">SAVE TO LEADERBOARD</button>
@@ -336,7 +345,7 @@
   // ---------- Game state ----------
   let player = null, bullets = [], enemyShots = [], coins = [], floaters = [], zombies = [], particles = [], keys = {},
       score = 0, lives = 3, gameRunning = false, spawnTimer = 0,
-      spawnInterval = 65, difficultyTimer = 0, hitFlash = 0;
+      spawnInterval = 65, difficultyTimer = 0, hitFlash = 0, holderBonus = false;
 
   const scoreEl = document.getElementById('score');
   const livesEl = document.getElementById('lives');
@@ -376,7 +385,7 @@
   let selectedChar = CHARACTERS[0];
   const charGrid = document.getElementById('charGrid');
   const charPicked = document.getElementById('charPicked');
-  function charStatsLine(c){ return c.name + ' · ' + c.title.toUpperCase() + ' · SPD ' + c.speed.toFixed(1) + ' · DMG ' + c.dmg + ' · FIRE ' + c.fire + 'ms · ' + c.lives + ' LIVES'; }
+  function charStatsLine(c){ return c.name + ' · ' + c.title.toUpperCase() + ' · SPD ' + c.speed.toFixed(1) + ' · DMG ' + c.dmg + ' · FIRE ' + c.fire + 'ms · ' + c.lives + ' LIVES' + (holderBonus ? ' · +1 HOLDER' : ''); }
   function renderCharGrid(){
     charGrid.innerHTML = '';
     CHARACTERS.forEach((c, i) => {
@@ -408,7 +417,7 @@
     particles = [];
     keys = {};
     score = 0;
-    lives = selectedChar.lives;
+    lives = selectedChar.lives + (holderBonus ? 1 : 0);
     gameRunning = true;
     spawnTimer = 0;
     spawnInterval = 65;
@@ -1619,6 +1628,7 @@
     finalScoreEl.textContent = 'Score: ' + score;
     finalHighEl.textContent = 'Best: ' + highScore + '  ·  BNB: ' + bnbEarned.toFixed(6);
     document.getElementById('gameOverChar').src = selectedChar.img;
+    document.getElementById('gameOverMintLine').textContent = 'You played as ' + selectedChar.name + ' — own this survivor as an NFT.';
     updateHUD();
     gameOverOverlay.classList.remove('hidden');
     cancelAnimationFrame(rafId);
@@ -1685,6 +1695,39 @@
       rowsEl.innerHTML = '<p class="muted">Could not load the leaderboard right now.</p>';
     }
   }
+
+  // ---------- Holder perk: +1 life for DeadGrid NFT holders ----------
+  // DeadGridNFT (deployed): 0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF
+  const NFT_CONTRACT = '0x3dB83C288A0C7c91B31D855dF079ACa5763aC3eF';
+  const NFT_ABI = ['function balanceOf(address) view returns (uint256)'];
+  // Only runs when the player taps the button — never auto-prompts on load.
+  window.checkHolder = async function(){
+    const statusEl = document.getElementById('holderStatus');
+    const btn = document.getElementById('holderBtn');
+    if (typeof ethers === 'undefined' || !window.ethereum){ statusEl.textContent = 'Open this page in a wallet browser (e.g. MetaMask).'; return; }
+    try{
+      statusEl.textContent = 'Connecting wallet…';
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send('eth_requestAccounts', []);
+      const net = await provider.getNetwork();
+      if (net.chainId !== 56n){ statusEl.textContent = 'Switch your wallet to BNB Chain mainnet.'; return; }
+      const signer = await provider.getSigner();
+      const addr = await signer.getAddress();
+      const c = new ethers.Contract(NFT_CONTRACT, NFT_ABI, provider);
+      const bal = await c.balanceOf(addr);
+      if (bal > 0n){
+        holderBonus = true;
+        btn.textContent = 'HOLDER ✓ +1 LIFE ACTIVE';
+        statusEl.textContent = 'You hold ' + bal + ' DeadGrid NFT' + (bal > 1n ? 's' : '') + ' — +1 life in every run.';
+        charPicked.textContent = charStatsLine(selectedChar);
+      } else {
+        holderBonus = false;
+        statusEl.textContent = 'No DeadGrid NFT in this wallet yet — mint one for 0.001 BNB (or FREE first with Agent ID).';
+      }
+    }catch(e){
+      statusEl.textContent = 'Could not check: ' + (e.reason || e.message || 'wallet error');
+    }
+  };
 
   window.saveScore = async function(){
     const statusEl = document.getElementById('saveStatus');
